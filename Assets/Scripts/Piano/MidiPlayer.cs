@@ -5,8 +5,8 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using UnityEngine.InputSystem;
-using Minis;
+// using UnityEngine.InputSystem;
+// using Minis;
 using MidiJack;
 using TMPro;
 using System.Reflection;
@@ -144,7 +144,13 @@ public class MidiPlayer : MonoBehaviour
         }
         
     }
-	void Update ()
+	
+    int getKeyNumber(int noteNumber)
+    {
+        return noteNumber + 21;
+    }
+
+    void Update ()
 	{
 		if (MIDISongs.Length <= 0)
 			enabled = false;
@@ -489,7 +495,7 @@ public class MidiPlayer : MonoBehaviour
                     int notenumber;
                     for(notenumber = 0; notenumber < 87 ; notenumber++)
                     {
-                        if(MidiMaster.GetKeyDown(notenumber) || Input.GetKeyUp(KeyCode.E))
+                        if(MidiMaster.GetKeyDown(getKeyNumber(notenumber)) || Input.GetKeyUp(KeyCode.E))
                         {
                             for(int i = sameLineNumber - 1; i >= 0; i--)
                             {
@@ -548,11 +554,22 @@ public class MidiPlayer : MonoBehaviour
             totalNoteText.gameObject.SetActive(false);
             scoreTexts.gameObject.SetActive(false);
             int notenumber;
+
+            // int notenumber_min = 0, notenumber_max = 127;
+            // for (notenumber = notenumber_min; notenumber < notenumber_max; notenumber ++ ) {
+            //     if (MidiMaster.GetKeyDown(notenumber)) {
+            //         Debug.LogFormat("KeyDown {0}", notenumber);
+            //     }
+                
+            //     if (MidiMaster.GetKeyUp(notenumber)) {
+            //         Debug.LogFormat("KeyUp {0}", notenumber);
+            //     }
+            // }
             for (notenumber = 0; notenumber < 88; notenumber++)
             {
                 int tempnumber = notenumber;
-                tempnumber = 12;
-                if (!pressed[tempnumber] && (MidiMaster.GetKeyDown(tempnumber) || Input.GetKeyDown(KeyCode.E)))
+                // tempnumber = 12;
+                if (!pressed[tempnumber] && (MidiMaster.GetKeyDown(getKeyNumber(notenumber)) || Input.GetKeyDown(KeyCode.E)))
                 {
                     u[tempnumber] = Instantiate(noteUpImage, GameObject.Find("Canvas").transform) as GameObject;
                     u[tempnumber].GetComponent<RectTransform>().localPosition = new Vector2(-950f + (CalcImageIndex(PianoKeyDetector.noteOrder[tempnumber].ToString()) - 1) * noteSize.x / 36f * 37.2f, -300f);
@@ -572,7 +589,7 @@ public class MidiPlayer : MonoBehaviour
                     Vector2 sizeDelta = u[tempnumber].GetComponent<RectTransform>().sizeDelta;
                     u[tempnumber].GetComponent<RectTransform>().sizeDelta = new Vector2(sizeDelta.x, (int)((Time.time - initTime[tempnumber]) * 60f * 100f) / 10f);
                 }
-                if(MidiMaster.GetKeyUp(tempnumber) || Input.GetKeyUp(KeyCode.E))
+                if(MidiMaster.GetKeyUp(getKeyNumber(notenumber)) || Input.GetKeyUp(KeyCode.E))
                     pressed[tempnumber] = false;
             }
         }
