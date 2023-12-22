@@ -26,6 +26,7 @@ public class SceneOpener : MonoBehaviour
     {
         SceneManager.LoadScene("Play");
         MidiPlayer.gamelevel = int.Parse(gameObject.name);
+        MidiPlayer.freeplay = false;
     }
 
     public void OpenFreeplayScene()

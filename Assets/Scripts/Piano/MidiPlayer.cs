@@ -15,8 +15,9 @@ public class MidiPlayer : MonoBehaviour
 {
 	[Header("References")]
 	public PianoKeyController PianoKeyDetector;
-	public static bool playAlong, pass, freeplay = true;
-	public GameObject noteImage, noteUpImage, speedDisplay, timeDisplay, timeTexts, noteTexts;
+	public static bool playAlong, pass, freeplay;
+	public GameObject noteImage, noteUpImage, speedDisplay, timeDisplay, timeTexts, noteTexts, levelpass, levelfail, levelendbar;
+    public AudioSource errorplayer;
 
 	[Header("Properties")]
 	public float GlobalSpeed = 1;
@@ -25,7 +26,7 @@ public class MidiPlayer : MonoBehaviour
 	public KeyMode KeyMode;
 	public bool ShowMIDIChannelColours;
 	public Color[] MIDIChannelColours;
-	public TMP_Text currentTimeText, totalTimeText, currentNoteText, totalNoteText, leftNoteText;
+	public TMP_Text currentTimeText, totalTimeText, currentNoteText, totalNoteText, leftNoteText, scoreTexts;
 
 	[Header("Ensure Song Name is filled for builds")]
 	public MidiSong[] MIDISongs;
@@ -40,12 +41,14 @@ public class MidiPlayer : MonoBehaviour
 	string[] _keyIndex;
 	int _noteIndex = 0, leftHandSameIndex = 0, leftHandInterval = 1, leftHandOnceIndex = 0, leftHandOnceInterval = 1, rightHandSameIndex = 0, rightHandInterval = 1, rightHandOnceIndex = 0, rightHandOnceInterval = 1;
 	int sameLineNumber;
-	public static int _midiIndex, gamelevel = 2;
+	public static int _midiIndex, gamelevel = 1;
     public static int[] alongKeys;
+    bool[] alongkeyspressed;
+    public static float score = 0;
 	double _timer = 0, currentTime = 0;
     float interval, imageInitY;
 	[SerializeField, HideInInspector]
-	bool _preset = false;
+	bool _preset = false, playended = false;
 	Vector2 noteSize;
 
     GameObject[] u = new GameObject[88];
@@ -54,8 +57,11 @@ public class MidiPlayer : MonoBehaviour
 
     void Start ()
 	{
-        
+        score = 0;
         pass = false;
+        levelpass.SetActive(false);
+        levelfail.SetActive(false);
+        levelendbar.SetActive(false);
 		imageInitY = -300f + 1.92f * NoteFlow.originSpeed;
 		OnPlayTrack = new UnityEvent();
 		OnPlayTrack.AddListener(delegate{FindObjectOfType<MusicText>().StartSequence(MIDISongs[_midiIndex].Details);});
@@ -354,7 +360,6 @@ public class MidiPlayer : MonoBehaviour
                                                         g.GetComponent<Image>().color = new Color(134f / 255f, 250f / 255f, 104f / 255f); //ring
                                                 }
                                                 break;
-                                                break;
                                             case 2:
                                                 g.GetComponent<Image>().color = new Color(255f / 255f, 191f / 255f, 228f / 255f); //thumb
                                                 break;
@@ -441,6 +446,7 @@ public class MidiPlayer : MonoBehaviour
 		}
 		else
 		{
+            
 			SetupNextMIDI();
 		}
 		if (Input.GetKeyUp(KeyCode.N))
@@ -466,42 +472,72 @@ public class MidiPlayer : MonoBehaviour
 				Time.timeScale = 1f;
             DisplaySpeed();
         }
-		else if (Input.GetKeyUp(KeyCode.A))
-		{
-			pass = true;
-		}
-		else if (Input.GetKeyUp(KeyCode.Escape))
-			SceneManager.LoadScene("Rosetta");
-		if(pass)
+        //else if (Input.GetKeyUp(KeyCode.A))
+        //{
+        //    pass = true;
+        //}
+        else if (Input.GetKeyUp(KeyCode.Escape))
+        {
+            OpenMainMenu();
+        }
+
+        if (alongKeys != null && !pass && alongkeyspressed != null)
+        {
+            switch (gamelevel)
+            {
+                case 1:
+                    int notenumber;
+                    for(notenumber = 0; notenumber < 87 ; notenumber++)
+                    {
+                        if(MidiMaster.GetKeyDown(notenumber) || Input.GetKeyUp(KeyCode.E))
+                        {
+                            for(int i = sameLineNumber - 1; i >= 0; i--)
+                            {
+                                if (alongKeys[i] == notenumber && !alongkeyspressed[i])
+                                {
+                                    alongkeyspressed[i] = true;
+
+                                    score++;
+                                    scoreTexts.text = score.ToString();
+                                }
+                                else
+                                    errorplayer.Play();
+                            }
+                        }
+                    }
+                    int t;
+                    for (t = sameLineNumber - 1; t >= 0 && alongkeyspressed[t]; t--)
+                    {
+                    }
+                    if (t == -1)
+                        pass = true;
+                    if (playended)
+                    {
+                        if (score == MidiNotes.Length)
+                        {
+                            levelpass.SetActive(true);
+                            levelendbar.SetActive(true);
+                            StartCoroutine(DelayedOpenMenu());
+                        }
+                        //else
+                        //{
+                        //    Time.timeScale = 1f;
+                        //    levelfail.SetActive(true);
+                        //    levelendbar.SetActive(true);
+                        //    StartCoroutine(DelayedOpenMenu());
+                        //}
+                    }
+                    break;
+            }
+        }
+
+
+        if (pass)
 		{
 			Time.timeScale = 1f;
 			pass = false;
 		}
-		switch (gamelevel)
-		{
-			case 1:
-				GlobalSpeed = 0.2f;
-				playAlong = true;
-                timeTexts.SetActive(true);
-                noteTexts.SetActive(false);
-				break;
-            case 2:
-                GlobalSpeed = 1f;
-                playAlong = false;
-                timeTexts.SetActive(false);
-                noteTexts.SetActive(true);
-                leftNoteText.gameObject.SetActive(true);
-                totalNoteText.gameObject.SetActive(false);
-                break;
-            case 3:
-                GlobalSpeed = 1f;
-                playAlong = false;
-                timeTexts.SetActive(false);
-                noteTexts.SetActive(true);
-                leftNoteText.gameObject.SetActive(false);
-                totalNoteText.gameObject.SetActive(true);
-                break;
-        }
+        
         if (freeplay)
         {
             GlobalSpeed = 1f;
@@ -510,34 +546,80 @@ public class MidiPlayer : MonoBehaviour
             noteTexts.SetActive(false);
             leftNoteText.gameObject.SetActive(false);
             totalNoteText.gameObject.SetActive(false);
+            scoreTexts.gameObject.SetActive(false);
             int notenumber;
             for (notenumber = 0; notenumber < 88; notenumber++)
             {
-                if (MidiMaster.GetKeyDown(notenumber) && !pressed[notenumber])
+                int tempnumber = notenumber;
+                tempnumber = 12;
+                if (!pressed[tempnumber] && (MidiMaster.GetKeyDown(tempnumber) || Input.GetKeyDown(KeyCode.E)))
                 {
-                    u[notenumber] = Instantiate(noteUpImage, GameObject.Find("Canvas").transform) as GameObject;
-                    u[notenumber].GetComponent<RectTransform>().localPosition = new Vector2(-950f + (CalcImageIndex(PianoKeyDetector.noteOrder[notenumber].ToString()) - 1) * noteSize.x / 36f * 37.2f, -300f);
-                    if (PianoKeyDetector.noteOrder[notenumber].Length == 3)
+                    u[tempnumber] = Instantiate(noteUpImage, GameObject.Find("Canvas").transform) as GameObject;
+                    u[tempnumber].GetComponent<RectTransform>().localPosition = new Vector2(-950f + (CalcImageIndex(PianoKeyDetector.noteOrder[tempnumber].ToString()) - 1) * noteSize.x / 36f * 37.2f, -300f);
+                    if (PianoKeyDetector.noteOrder[tempnumber].Length == 3)
                     {
-                        Vector2 sizeDelta = u[notenumber].GetComponent<RectTransform>().sizeDelta;
-                        u[notenumber].GetComponent<RectTransform>().sizeDelta = new Vector2(sizeDelta.x / 2f, sizeDelta.y);
-                        u[notenumber].GetComponent<RectTransform>().localPosition = new Vector2(u[notenumber].GetComponent<RectTransform>().localPosition.x + noteSize.x / 36f * 18.6f, u[notenumber].GetComponent<RectTransform>().localPosition.y);
+                        Vector2 sizeDelta = u[tempnumber].GetComponent<RectTransform>().sizeDelta;
+                        u[tempnumber].GetComponent<RectTransform>().sizeDelta = new Vector2(sizeDelta.x / 2f, sizeDelta.y);
+                        u[tempnumber].GetComponent<RectTransform>().localPosition = new Vector2(u[tempnumber].GetComponent<RectTransform>().localPosition.x + noteSize.x / 36f * 18.6f, u[tempnumber].GetComponent<RectTransform>().localPosition.y);
                     }
-                    initTime[notenumber] = Time.time;
-                    pressed[notenumber] = true;
+                    initTime[tempnumber] = Time.time;
+                    pressed[tempnumber] = true;
+
+                    PianoKeyDetector.PianoNotes[PianoKeyDetector.noteOrder[tempnumber]].Play(10f, 1f, GlobalSpeed);
                 }
-                if (pressed[notenumber] && Time.time - initTime[notenumber] > 0.1f)
+                if (pressed[tempnumber] && Time.time - initTime[tempnumber] > 0.1f)
                 {
-                    print(Time.time - initTime[notenumber]);
-                    Vector2 sizeDelta = u[notenumber].GetComponent<RectTransform>().sizeDelta;
-                    u[notenumber].GetComponent<RectTransform>().sizeDelta = new Vector2(sizeDelta.x, (int)((Time.time - initTime[notenumber]) * 60f * 100f) / 10f);
+                    Vector2 sizeDelta = u[tempnumber].GetComponent<RectTransform>().sizeDelta;
+                    u[tempnumber].GetComponent<RectTransform>().sizeDelta = new Vector2(sizeDelta.x, (int)((Time.time - initTime[tempnumber]) * 60f * 100f) / 10f);
                 }
-                if(MidiMaster.GetKeyUp(notenumber))
-                    pressed[notenumber] = false;
+                if(MidiMaster.GetKeyUp(tempnumber) || Input.GetKeyUp(KeyCode.E))
+                    pressed[tempnumber] = false;
+            }
+        }
+        else
+        {
+            scoreTexts.gameObject.SetActive(true);
+            switch (gamelevel)
+            {
+                case 1:
+                    GlobalSpeed = 1f;
+                    playAlong = true;
+                    timeTexts.SetActive(true);
+                    noteTexts.SetActive(true);
+                    leftNoteText.gameObject.SetActive(false);
+                    currentNoteText.gameObject.SetActive(false);
+                    totalNoteText.gameObject.SetActive(true);
+                    break;
+                case 2:
+                    GlobalSpeed = 1f;
+                    playAlong = false;
+                    timeTexts.SetActive(false);
+                    noteTexts.SetActive(true);
+                    leftNoteText.gameObject.SetActive(true);
+                    totalNoteText.gameObject.SetActive(false);
+                    break;
+                case 3:
+                case 4:
+                case 5:
+                case 6:
+                default:
+                    GlobalSpeed = 1f;
+                    playAlong = false;
+                    timeTexts.SetActive(false);
+                    noteTexts.SetActive(true);
+                    leftNoteText.gameObject.SetActive(false);
+                    totalNoteText.gameObject.SetActive(true);
+                    break;
+
             }
         }
 	}
 
+    IEnumerator DelayedOpenMenu()
+    {
+        yield return new WaitForSeconds(5f);
+        SceneManager.LoadScene("Rosetta");
+    }
 	IEnumerator WaitAndPlay(float t, int _index)
 	{
 		yield return new WaitForSeconds(t);
@@ -580,6 +662,12 @@ public class MidiPlayer : MonoBehaviour
                 if (playAlong && !pass)
                 {
                     Time.timeScale = 0f;
+                }
+                if(!freeplay)
+                {
+                    if (_index == 19)
+                        playended = true;
+                    alongkeyspressed = new bool[sameLineNumber];
                 }
             }
         }
@@ -705,6 +793,12 @@ public class MidiPlayer : MonoBehaviour
 			s += t.ToString();
         return s;
 	}
+
+    public void OpenMainMenu()
+    {
+        SceneManager.LoadScene("Rosetta");
+        Time.timeScale = 1f;
+    }
 
     void SetupNextMIDI()
 	{
