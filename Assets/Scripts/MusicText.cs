@@ -9,7 +9,7 @@ public class MusicText : MonoBehaviour
 
     IEnumerator Sequence(string detailText)
     {
-        yield return new WaitForSeconds(5);
+        yield return new WaitForSeconds(1);
         
         if (!string.IsNullOrEmpty(detailText))
             Details.text = detailText;
@@ -21,7 +21,7 @@ public class MusicText : MonoBehaviour
         }
 
         CanvasGroup.alpha = 1;
-        yield return new WaitForSeconds(5);
+        yield return new WaitForSeconds(1);
 
         for (float t = 0; t < 1; t += Time.deltaTime / 1.5f)
         {

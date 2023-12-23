@@ -10,13 +10,14 @@ using UnityEngine.UI;
 using MidiJack;
 using TMPro;
 using System.Reflection;
+using Michsky.UI.Shift;
 
 public class MidiPlayer : MonoBehaviour
 {
 	[Header("References")]
 	public PianoKeyController PianoKeyDetector;
-	public static bool playAlong, pass, freeplay;
-	public GameObject noteImage, noteUpImage, speedDisplay, timeDisplay, timeTexts, noteTexts, levelpass, levelfail, levelendbar;
+    public static bool playAlong, pass, freeplay;
+	public GameObject noteImage, noteUpImage, speedDisplay, timeDisplay, timeTexts, noteTexts, levelpass, levelfail, levelendbar, bonusText;
     public AudioSource errorplayer;
 
 	[Header("Properties")]
@@ -40,13 +41,13 @@ public class MidiPlayer : MonoBehaviour
 	string _path;
 	string[] _keyIndex;
 	int _noteIndex = 0, leftHandSameIndex = 0, leftHandInterval = 1, leftHandOnceIndex = 0, leftHandOnceInterval = 1, rightHandSameIndex = 0, rightHandInterval = 1, rightHandOnceIndex = 0, rightHandOnceInterval = 1;
-	int sameLineNumber;
+	int sameLineNumber, continousFail = 0;
 	public static int _midiIndex, gamelevel = 1;
     public static int[] alongKeys;
     bool[] alongkeyspressed;
     public static float score = 0;
 	double _timer = 0, currentTime = 0;
-    float interval, imageInitY;
+    float interval, imageInitY, bonus = 1f;
 	[SerializeField, HideInInspector]
 	bool _preset = false, playended = false;
 	Vector2 noteSize;
@@ -87,32 +88,58 @@ public class MidiPlayer : MonoBehaviour
 		totalTimeText.text = DisplayTotalTime(t);
         totalNoteText.text = MidiNotes.Length.ToString();
         leftNoteText.text = MidiNotes.Length.ToString();
-        //InputSystem.onDeviceChange += (device, change) => {
-        //	var midiDevice = device as Minis.MidiDevice;
-        //	if (midiDevice == null) return;
+        
+        if(freeplay)
+        {
+            GlobalSpeed = 1f;
+            playAlong = false;
+            timeTexts.SetActive(false);
+            noteTexts.SetActive(false);
+            leftNoteText.gameObject.SetActive(false);
+            totalNoteText.gameObject.SetActive(false);
+            scoreTexts.gameObject.SetActive(false);
+            bonusText.SetActive(false);
+        }
+        else
+        {
+            scoreTexts.gameObject.SetActive(true);
+            switch (gamelevel)
+            {
+                case 1:
+                    GlobalSpeed = 1f;
+                    playAlong = true;
+                    timeTexts.SetActive(true);
+                    noteTexts.SetActive(true);
+                    leftNoteText.gameObject.SetActive(false);
+                    currentNoteText.gameObject.SetActive(false);
+                    totalNoteText.gameObject.SetActive(true);
+                    bonusText.SetActive(false);
+                    break;
+                case 2:
+                    GlobalSpeed = 1f;
+                    playAlong = false;
+                    timeTexts.SetActive(false);
+                    noteTexts.SetActive(true);
+                    leftNoteText.gameObject.SetActive(true);
+                    totalNoteText.gameObject.SetActive(false);
+                    bonusText.SetActive(true);
+                    break;
+                case 3:
+                case 4:
+                case 5:
+                case 6:
+                default:
+                    GlobalSpeed = 1f;
+                    playAlong = false;
+                    timeTexts.SetActive(false);
+                    noteTexts.SetActive(true);
+                    leftNoteText.gameObject.SetActive(false);
+                    totalNoteText.gameObject.SetActive(true);
+                    bonusText.SetActive(true);
+                    break;
 
-        //	midiDevice.onWillNoteOn += (note, velocity) =>
-        //	{
-
-        //		// When middle C (MIDI #60) is pressed:
-        //		if (note.noteNumber == 60)
-        //		{
-
-        //			// Character starts moving...
-        //		}
-        //	};
-
-
-        //	midiDevice.onWillNoteOff += (note) => {
-
-        //		// When middle C (MIDI #60) is released:
-        //		if (note.noteNumber == 60)
-        //		{
-
-        //			// Character stops moving...
-        //		}
-        //	};
-        //};
+            }
+        }
         
     }
 	int CalcImageIndex(string note)
@@ -148,6 +175,52 @@ public class MidiPlayer : MonoBehaviour
     int getKeyNumber(int noteNumber)
     {
         return noteNumber + 21;
+    }
+
+    void ScoreMechanics()
+    {
+        int notenumber;
+        for (notenumber = 0; notenumber < 88; notenumber++)
+        {
+            if (MidiMaster.GetKeyDown(getKeyNumber(notenumber)) || Input.GetKeyUp(KeyCode.E))
+            {
+                int r = 0;
+                for (int i = sameLineNumber - 1; i >= 0; i--)
+                {
+                    if (alongKeys[i] == notenumber && !alongkeyspressed[i])
+                    {
+                        alongkeyspressed[i] = true;
+
+                        score += bonus;
+                        continousFail = 0;
+                        scoreTexts.text = ((int)(score * 1000f) / 1000f).ToString();
+
+                        bonus += 0.2f;
+                        bonus = ((int)(bonus * 1000)) / 1000f;
+                        bonusText.GetComponent<MainButton>().buttonText = "x" + bonus.ToString();
+                        bonusText.transform.GetChild(0).GetChild(0).gameObject.GetComponent<TMP_Text>().text = "x" + bonus.ToString();
+                        bonusText.transform.GetChild(0).gameObject.GetComponent<CanvasGroup>().alpha = 1f;
+
+                        r++;
+                    }
+                }
+                if (r == 0)
+                {
+                    errorplayer.Play();
+                    print("error");
+                    bonus = 1f;
+                    bonusText.GetComponent<MainButton>().buttonText = "x" + bonus.ToString();
+                    bonusText.transform.GetChild(0).GetChild(0).gameObject.GetComponent<TMP_Text>().text = "x" + bonus.ToString();
+                    bonusText.transform.GetChild(0).gameObject.GetComponent<CanvasGroup>().alpha = 1f;
+
+                    continousFail++;
+                }
+            }
+        }
+        if (continousFail >= 3)
+        {
+            playended = true;
+        }
     }
 
     void Update ()
@@ -449,7 +522,13 @@ public class MidiPlayer : MonoBehaviour
 				_noteIndex++;
 				
 			}
-		}
+            GameObject[] gs = GameObject.FindGameObjectsWithTag("Flow");
+            foreach (GameObject gsu in gs)
+            {
+                if (gsu.GetComponent<RectTransform>().localPosition.y < -2000f)
+                    Destroy(gsu);
+            }
+        }
 		else
 		{
             
@@ -489,26 +568,27 @@ public class MidiPlayer : MonoBehaviour
 
         if (alongKeys != null && !pass && alongkeyspressed != null)
         {
+            int notenumber;
             switch (gamelevel)
             {
                 case 1:
-                    int notenumber;
-                    for(notenumber = 0; notenumber < 87 ; notenumber++)
+                    for(notenumber = 0; notenumber < 88 ; notenumber++)
                     {
                         if(MidiMaster.GetKeyDown(getKeyNumber(notenumber)) || Input.GetKeyUp(KeyCode.E))
                         {
+                            int r = 0;
                             for(int i = sameLineNumber - 1; i >= 0; i--)
                             {
                                 if (alongKeys[i] == notenumber && !alongkeyspressed[i])
                                 {
                                     alongkeyspressed[i] = true;
-
                                     score++;
                                     scoreTexts.text = score.ToString();
-                                }
-                                else
-                                    errorplayer.Play();
+                                    r++;
+                                }                                   
                             }
+                            if(r == 0)
+                                errorplayer.Play();
                         }
                     }
                     int t;
@@ -534,6 +614,43 @@ public class MidiPlayer : MonoBehaviour
                         //}
                     }
                     break;
+                case 2:
+                    ScoreMechanics();
+                    if (playended)
+                    {
+                        if (score >= MidiNotes.Length * 0.8f)
+                        {
+                            levelpass.SetActive(true);
+                            levelendbar.SetActive(true);
+                            StartCoroutine(DelayedOpenMenu());
+                        }
+                        else
+                        {
+                            Time.timeScale = 1f;
+                            StartCoroutine(DelayShowResult());
+                        }
+                    }
+                    break;
+                case 3:
+                case 4:
+                case 5:
+                case 6:
+                    ScoreMechanics();
+                    if (playended)
+                    {
+                        if (score >= MidiNotes.Length)
+                        {
+                            levelpass.SetActive(true);
+                            levelendbar.SetActive(true);
+                            StartCoroutine(DelayedOpenMenu());
+                        }
+                        else
+                        {
+                            Time.timeScale = 1f;
+                            StartCoroutine(DelayShowResult());
+                        }
+                    }
+                    break;
             }
         }
 
@@ -546,29 +663,11 @@ public class MidiPlayer : MonoBehaviour
         
         if (freeplay)
         {
-            GlobalSpeed = 1f;
-            playAlong = false;
-            timeTexts.SetActive(false);
-            noteTexts.SetActive(false);
-            leftNoteText.gameObject.SetActive(false);
-            totalNoteText.gameObject.SetActive(false);
-            scoreTexts.gameObject.SetActive(false);
             int notenumber;
-
-            // int notenumber_min = 0, notenumber_max = 127;
-            // for (notenumber = notenumber_min; notenumber < notenumber_max; notenumber ++ ) {
-            //     if (MidiMaster.GetKeyDown(notenumber)) {
-            //         Debug.LogFormat("KeyDown {0}", notenumber);
-            //     }
-                
-            //     if (MidiMaster.GetKeyUp(notenumber)) {
-            //         Debug.LogFormat("KeyUp {0}", notenumber);
-            //     }
-            // }
             for (notenumber = 0; notenumber < 88; notenumber++)
             {
                 int tempnumber = notenumber;
-                // tempnumber = 12;
+                //tempnumber = 12;
                 if (!pressed[tempnumber] && (MidiMaster.GetKeyDown(getKeyNumber(notenumber)) || Input.GetKeyDown(KeyCode.E)))
                 {
                     u[tempnumber] = Instantiate(noteUpImage, GameObject.Find("Canvas").transform) as GameObject;
@@ -593,48 +692,24 @@ public class MidiPlayer : MonoBehaviour
                     pressed[tempnumber] = false;
             }
         }
-        else
-        {
-            scoreTexts.gameObject.SetActive(true);
-            switch (gamelevel)
-            {
-                case 1:
-                    GlobalSpeed = 1f;
-                    playAlong = true;
-                    timeTexts.SetActive(true);
-                    noteTexts.SetActive(true);
-                    leftNoteText.gameObject.SetActive(false);
-                    currentNoteText.gameObject.SetActive(false);
-                    totalNoteText.gameObject.SetActive(true);
-                    break;
-                case 2:
-                    GlobalSpeed = 1f;
-                    playAlong = false;
-                    timeTexts.SetActive(false);
-                    noteTexts.SetActive(true);
-                    leftNoteText.gameObject.SetActive(true);
-                    totalNoteText.gameObject.SetActive(false);
-                    break;
-                case 3:
-                case 4:
-                case 5:
-                case 6:
-                default:
-                    GlobalSpeed = 1f;
-                    playAlong = false;
-                    timeTexts.SetActive(false);
-                    noteTexts.SetActive(true);
-                    leftNoteText.gameObject.SetActive(false);
-                    totalNoteText.gameObject.SetActive(true);
-                    break;
 
-            }
+        GameObject[] us = GameObject.FindGameObjectsWithTag("Flow");
+        foreach(GameObject usu in us)
+        {
+            if (usu.GetComponent<RectTransform>().localPosition.y > 2000f)
+                Destroy(usu);
         }
 	}
-
+    IEnumerator DelayShowResult()
+    {
+        yield return new WaitForSeconds(1f);
+        levelfail.SetActive(true);
+        levelendbar.SetActive(true);
+        StartCoroutine(DelayedOpenMenu());
+    }
     IEnumerator DelayedOpenMenu()
     {
-        yield return new WaitForSeconds(5f);
+        yield return new WaitForSeconds(6.5f);
         SceneManager.LoadScene("Rosetta");
     }
 	IEnumerator WaitAndPlay(float t, int _index)
@@ -682,7 +757,7 @@ public class MidiPlayer : MonoBehaviour
                 }
                 if(!freeplay)
                 {
-                    if (_index == 19)
+                    if (_index == MidiNotes.Length - 1)
                         playended = true;
                     alongkeyspressed = new bool[sameLineNumber];
                 }
@@ -748,19 +823,6 @@ public class MidiPlayer : MonoBehaviour
 			leftHandSameIndex = _noteIndex + i;
 		}
         i = 0;
-        int t = 1;
-        //while (_noteIndex + i + t < MidiNotes.Length)
-        //{
-        //    if (MidiNotes[_noteIndex + i].Channel == MidiNotes[_noteIndex + i + t].Channel)
-        //    {
-        //        if (PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex + i].Note) <= PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex + i + t].Note))
-        //            i++;
-        //        else
-        //            break;
-        //    }
-        //    else
-        //        t++;
-        //}
         while (_noteIndex + i + 1 < MidiNotes.Length && MidiNotes[_noteIndex + i].Channel == MidiNotes[_noteIndex + i + 1].Channel && PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex + i].Note) <= PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex + i + 1].Note))
         {
             i++;
