@@ -19,6 +19,7 @@ public class MidiPlayer : MonoBehaviour
     public static bool playAlong, pass, freeplay;
 	public GameObject noteImage, noteUpImage, speedDisplay, timeDisplay, timeTexts, noteTexts, levelpass, levelfail, levelendbar, bonusText;
     public AudioSource errorplayer;
+    public AudioClip errorplayerClip;
 
 	[Header("Properties")]
 	public float GlobalSpeed = 1;
@@ -41,7 +42,7 @@ public class MidiPlayer : MonoBehaviour
 	string _path;
 	string[] _keyIndex;
 	int _noteIndex = 0, leftHandSameIndex = 0, leftHandInterval = 1, leftHandOnceIndex = 0, leftHandOnceInterval = 1, rightHandSameIndex = 0, rightHandInterval = 1, rightHandOnceIndex = 0, rightHandOnceInterval = 1;
-	int sameLineNumber, continousFail = 0;
+	int sameLineNumber, continousFail = 0, midiNoteLength;
 	public static int _midiIndex, gamelevel = 1;
     public static int[] alongKeys;
     bool[] alongkeyspressed;
@@ -59,6 +60,7 @@ public class MidiPlayer : MonoBehaviour
     void Start ()
 	{
         score = 0;
+        midiNoteLength = MidiNotes.Length;
         pass = false;
         levelpass.SetActive(false);
         levelfail.SetActive(false);
@@ -86,8 +88,8 @@ public class MidiPlayer : MonoBehaviour
         noteSize = noteImage.GetComponent<RectTransform>().sizeDelta;
 		int t = (int)CalcTotalTime();
 		totalTimeText.text = DisplayTotalTime(t);
-        totalNoteText.text = MidiNotes.Length.ToString();
-        leftNoteText.text = MidiNotes.Length.ToString();
+        totalNoteText.text = midiNoteLength.ToString();
+        leftNoteText.text = midiNoteLength.ToString();
         
         if(freeplay)
         {
@@ -206,7 +208,7 @@ public class MidiPlayer : MonoBehaviour
                 }
                 if (r == 0)
                 {
-                    errorplayer.Play();
+                    errorplayer.PlayOneShot(errorplayerClip);
                     print("error");
                     bonus = 1f;
                     bonusText.GetComponent<MainButton>().buttonText = "x" + bonus.ToString();
@@ -227,18 +229,19 @@ public class MidiPlayer : MonoBehaviour
 	{
 		if (MIDISongs.Length <= 0)
 			enabled = false;
-		
-		if (_midi != null && MidiNotes.Length > 0 && _noteIndex < MidiNotes.Length)
-		{
+
+        if (_midi != null && midiNoteLength > 0 && _noteIndex < midiNoteLength)
+        //if (_midi != null && MidiNotes.Length > 0 && _noteIndex < 20)
+        {
 			
             _timer += Time.deltaTime * GlobalSpeed * MidiNotes[_noteIndex].Tempo;
 			currentTime += Time.deltaTime * GlobalSpeed;
 			currentTimeText.text = DisplayTotalTime((int)currentTime);
             
             //Debug.LogError(MidiNotes[_noteIndex].Tempo);
-            while (_noteIndex < MidiNotes.Length && MidiNotes[_noteIndex].StartTime < _timer && !freeplay)
+            while (_noteIndex < midiNoteLength && MidiNotes[_noteIndex].StartTime < _timer && !freeplay)
 			{
-				timeDisplay.GetComponent<Slider>().value = (float)(_timer / MidiNotes[MidiNotes.Length - 1].StartTime);
+				timeDisplay.GetComponent<Slider>().value = (float)(_timer / MidiNotes[midiNoteLength - 1].StartTime);
 				if (PianoKeyDetector.PianoNotes.ContainsKey(MidiNotes[_noteIndex].Note))
 				{
 					
@@ -600,6 +603,7 @@ public class MidiPlayer : MonoBehaviour
                     if (playended)
                     {
                         if (score == MidiNotes.Length)
+                        //if (score == 20)
                         {
                             levelpass.SetActive(true);
                             levelendbar.SetActive(true);
@@ -758,6 +762,7 @@ public class MidiPlayer : MonoBehaviour
                 if(!freeplay)
                 {
                     if (_index == MidiNotes.Length - 1)
+                    //if(_index == 19)
                         playended = true;
                     alongkeyspressed = new bool[sameLineNumber];
                 }
