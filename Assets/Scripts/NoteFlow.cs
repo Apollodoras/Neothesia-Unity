@@ -8,7 +8,9 @@ public class NoteFlow : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        originSpeed = flowSpeed = 600;
+        originSpeed = flowSpeed = 600; // note falls from y 540 to -300(current keyboard position) for 1.4 seconds
+        if (Menu.hideKeyboard)
+            originSpeed = flowSpeed = 770; // from 540 to -540 for 1.4 seconds
     }
     
     // Update is called once per frame

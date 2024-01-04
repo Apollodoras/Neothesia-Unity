@@ -47,7 +47,7 @@ public class MidiPlayer : MonoBehaviour
     public static int[] alongKeys;
     bool[] alongkeyspressed;
     public static float score = 0;
-	double _timer = 0, currentTime = 0;
+	double _timer = 0, currentTime = 0, startTime;
     float interval, imageInitY, bonus = 1f;
 	[SerializeField, HideInInspector]
 	bool _preset = false, playended = false;
@@ -57,8 +57,16 @@ public class MidiPlayer : MonoBehaviour
     float[] initTime = new float[88];
     bool[] pressed = new bool[88];
 
+    Color pinkyColor = new Color(241f / 255f, 86f / 255f, 112f / 255f);//pinky
+    Color ringColor = new Color(58f / 255f, 139f / 255f, 241f / 255f);//ring
+    Color middleColor = new Color(110f / 255f, 67f / 255f, 245f / 255f);//middle
+    Color indexColor = new Color(233f / 255f, 194f / 225f, 35f / 255f);//index
+    Color thumbColor = new Color(48f / 255f, 162f / 255f, 109f / 255f);//thumb
+
     void Start ()
 	{
+        startTime = Time.realtimeSinceStartup;
+
         score = 0;
         
         pass = false;
@@ -141,7 +149,9 @@ public class MidiPlayer : MonoBehaviour
         interval = _midi.MidiFile.DeltaTicksPerQuarterNote / 4f;
         noteSize = noteImage.GetComponent<RectTransform>().sizeDelta;
         int t = (int)CalcTotalTime();
-        totalTimeText.text = DisplayTotalTime(t);
+        totalTimeText.text = "/" + DisplayTotalTime(t);
+        if (gamelevel == 1)
+            totalTimeText.text = "";
         totalNoteText.text = midiNoteLength.ToString();
         leftNoteText.text = midiNoteLength.ToString();
     }
@@ -237,7 +247,9 @@ public class MidiPlayer : MonoBehaviour
             _timer += Time.deltaTime * GlobalSpeed * MidiNotes[_noteIndex].Tempo;
 			currentTime += Time.deltaTime * GlobalSpeed;
 			currentTimeText.text = DisplayTotalTime((int)currentTime);
-            
+            if (gamelevel == 1)
+                currentTimeText.text = DisplayTotalTime((int)(Time.realtimeSinceStartup - startTime));
+
             //Debug.LogError(MidiNotes[_noteIndex].Tempo);
             while (_noteIndex < midiNoteLength && MidiNotes[_noteIndex].StartTime < _timer && !freeplay)
 			{
@@ -278,65 +290,65 @@ public class MidiPlayer : MonoBehaviour
 										case 'C':
 											if (MidiNotes[_noteIndex].Channel != MidiNotes[_noteIndex+1].Channel)
 											{
-                                                g.GetComponent<Image>().color = new Color(255f / 255f, 191f / 255f, 228f / 255f); //thumb
-												break;
+                                                g.GetComponent<Image>().color = thumbColor; //thumb
+                                                break;
                                             }
 											else
 											{
-                                                g.GetComponent<Image>().color = new Color(255f / 255f, 118f / 255f, 68f / 255f); //pinky
+                                                
                                                 break;
                                             }
 										case 'F':
-                                            g.GetComponent<Image>().color = new Color(255f / 255f, 118f / 255f, 68f / 255f); //pinky
+                                            g.GetComponent<Image>().color = pinkyColor; //pinky
 											break;
                                         case 'D':
                                         case 'G':
-                                            g.GetComponent<Image>().color = new Color(134f / 255f, 250f / 255f, 104f / 255f); //ring
+                                            g.GetComponent<Image>().color = ringColor; //ring
 											break;
                                         case 'E':
                                         case 'A':
-                                            g.GetComponent<Image>().color = new Color(255f / 255f, 255f / 255f, 0f / 255f); //middle
+                                            g.GetComponent<Image>().color = middleColor; //middle
                                             break;
                                         case 'B':
-                                            g.GetComponent<Image>().color = new Color(84f / 255f, 217f / 255f, 227f / 255f); //index
+                                            g.GetComponent<Image>().color = indexColor; //index
                                             break;
                                     }
 									break;
 									case 2: //when pressing two keys at once
 										if (_noteIndex == leftHandOnceIndex)
-                                            g.GetComponent<Image>().color = new Color(255f / 255f, 191f / 255f, 228f / 255f); //thumb
+                                            g.GetComponent<Image>().color = thumbColor; //thumb
                                         else
                                         {
 											int interval = PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex + 1].Note) - PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex].Note);
 
                                             if (interval <= 4)
 											{
-                                                g.GetComponent<Image>().color = new Color(84f / 255f, 217f / 255f, 227f / 255f); //index
+                                                g.GetComponent<Image>().color = indexColor; //index
                                             }
 											else if(interval <= 7)
-                                                g.GetComponent<Image>().color = new Color(134f / 255f, 250f / 255f, 104f / 255f); //ring
+                                                g.GetComponent<Image>().color = ringColor; //ring
 											else
-                                                g.GetComponent<Image>().color = new Color(255f / 255f, 118f / 255f, 68f / 255f); //pinky
+                                                g.GetComponent<Image>().color = pinkyColor; //pinky
                                         }
                                         break;
                                     case 3:
                                         switch (leftHandOnceIndex - _noteIndex)
 										{
 											case 0:
-                                                g.GetComponent<Image>().color = new Color(255f / 255f, 191f / 255f, 228f / 255f); //thumb
+                                                g.GetComponent<Image>().color = thumbColor; //thumb
 												break;
                                             case 1:
-                                                g.GetComponent<Image>().color = new Color(255f / 255f, 255f / 255f, 0f / 255f); //middle
+                                                g.GetComponent<Image>().color = middleColor; //middle
                                                 if (MidiNotes[_noteIndex].Note.Length == 3)
                                                 {
                                                     if(PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex + 1].Note) - PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex].Note) <= 4)
-                                                        g.GetComponent<Image>().color = new Color(84f / 255f, 217f / 255f, 227f / 255f); //index
+                                                        g.GetComponent<Image>().color = indexColor; //index
                                                     else
-                                                        g.GetComponent<Image>().color = new Color(134f / 255f, 250f / 255f, 104f / 255f); //ring
+                                                        g.GetComponent<Image>().color = ringColor; //ring
                                                 }
                                                 break;
 											case 2:
-                                                g.GetComponent<Image>().color = new Color(255f / 255f, 118f / 255f, 68f / 255f); //pinky
+                                                g.GetComponent<Image>().color = pinkyColor; //pinky
                                                 break;
 										}
                                         break;
@@ -344,16 +356,16 @@ public class MidiPlayer : MonoBehaviour
                                         switch (leftHandOnceIndex - _noteIndex)
                                         {
                                             case 0:
-                                                g.GetComponent<Image>().color = new Color(255f / 255f, 191f / 255f, 228f / 255f); //thumb
+                                                g.GetComponent<Image>().color = thumbColor; //thumb
                                                 break;
                                             case 1:
-                                                g.GetComponent<Image>().color = new Color(84f / 255f, 217f / 255f, 227f / 255f); //index
+                                                g.GetComponent<Image>().color = indexColor; //index
                                                 break;
                                             case 2:
-                                                g.GetComponent<Image>().color = new Color(134f / 255f, 250f / 255f, 104f / 255f); //ring
+                                                g.GetComponent<Image>().color = ringColor; //ring
                                                 break;
                                             case 3:
-                                                g.GetComponent<Image>().color = new Color(255f / 255f, 118f / 255f, 68f / 255f); //pinky
+                                                g.GetComponent<Image>().color = pinkyColor; //pinky
                                                 break;
                                         }
                                         break;
@@ -361,19 +373,19 @@ public class MidiPlayer : MonoBehaviour
                                         switch (leftHandOnceIndex - _noteIndex)
                                         {
                                             case 0:
-                                                g.GetComponent<Image>().color = new Color(255f / 255f, 191f / 255f, 228f / 255f); //thumb
+                                                g.GetComponent<Image>().color = thumbColor; //thumb
                                                 break;
                                             case 1:
-                                                g.GetComponent<Image>().color = new Color(84f / 255f, 217f / 255f, 227f / 255f); //index
+                                                g.GetComponent<Image>().color = indexColor; //index
                                                 break;
                                             case 2:
-                                                g.GetComponent<Image>().color = new Color(255f / 255f, 255f / 255f, 0f / 255f); //middle
+                                                g.GetComponent<Image>().color = middleColor; //middle
                                                 break;
                                             case 3:
-                                                g.GetComponent<Image>().color = new Color(134f / 255f, 250f / 255f, 104f / 255f); //ring
+                                                g.GetComponent<Image>().color = ringColor; //ring
                                                 break;
                                             case 4:
-                                                g.GetComponent<Image>().color = new Color(255f / 255f, 118f / 255f, 68f / 255f); //pinky
+                                                g.GetComponent<Image>().color = pinkyColor; //pinky
                                                 break;
                                         }
                                         break;
@@ -389,61 +401,61 @@ public class MidiPlayer : MonoBehaviour
                                         {
                                             case 'C':
                                                 if (MidiNotes[_noteIndex].Channel != MidiNotes[_noteIndex + 1].Channel)
-                                                    g.GetComponent<Image>().color = new Color(255f / 255f, 118f / 255f, 68f / 255f); //pinky
+                                                    g.GetComponent<Image>().color = pinkyColor; //pinky
                                                 else
-                                                    g.GetComponent<Image>().color = new Color(255f / 255f, 191f / 255f, 228f / 255f); //thumb
+                                                    g.GetComponent<Image>().color = thumbColor; //thumb
                                                 break;
                                             case 'F':
-                                                g.GetComponent<Image>().color = new Color(255f / 255f, 191f / 255f, 228f / 255f); //thumb
+                                                g.GetComponent<Image>().color = thumbColor; //thumb
                                                 break;
                                             case 'D':
                                             case 'G':
-                                                g.GetComponent<Image>().color = new Color(84f / 255f, 217f / 255f, 227f / 255f); //index
+                                                g.GetComponent<Image>().color = indexColor; //index
                                                 break;
                                             case 'E':
                                             case 'A':
-                                                g.GetComponent<Image>().color = new Color(255f / 255f, 255f / 255f, 0f / 255f); //middle
+                                                g.GetComponent<Image>().color = middleColor; //middle
                                                 break;
                                             case 'B':
-                                                g.GetComponent<Image>().color = new Color(134f / 255f, 250f / 255f, 104f / 255f); //ring
+                                                g.GetComponent<Image>().color = ringColor; //ring
                                                 break;
                                         }
                                         break;
                                     case 2: //when pressing two keys at once
                                         if (_noteIndex != rightHandOnceIndex)
-                                            g.GetComponent<Image>().color = new Color(255f / 255f, 191f / 255f, 228f / 255f); //thumb
+                                            g.GetComponent<Image>().color = thumbColor; //thumb
                                         else
                                         {
                                             int interval = PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex].Note) - PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex-1].Note);
 
                                             if (interval <= 4)
                                             {
-                                                g.GetComponent<Image>().color = new Color(84f / 255f, 217f / 255f, 227f / 255f); //index
+                                                g.GetComponent<Image>().color = indexColor; //index
                                             }
                                             else if (interval <= 7)
-                                                g.GetComponent<Image>().color = new Color(134f / 255f, 250f / 255f, 104f / 255f); //ring
+                                                g.GetComponent<Image>().color = ringColor; //ring
                                             else
-                                                g.GetComponent<Image>().color = new Color(255f / 255f, 118f / 255f, 68f / 255f); //pinky
+                                                g.GetComponent<Image>().color = pinkyColor; //pinky
                                         }
                                         break;
                                     case 3:
                                         switch (rightHandOnceIndex - _noteIndex)
                                         {
                                             case 0:
-                                                g.GetComponent<Image>().color = new Color(255f / 255f, 118f / 255f, 68f / 255f); //pinky
+                                                g.GetComponent<Image>().color = pinkyColor; //pinky
                                                 break;
                                             case 1:
-                                                g.GetComponent<Image>().color = new Color(255f / 255f, 255f / 255f, 0f / 255f); //middle
+                                                g.GetComponent<Image>().color = middleColor; //middle
                                                 if (MidiNotes[_noteIndex].Note.Length == 3)
                                                 {
                                                     if (PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex].Note) - PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex-1].Note) <= 4)
-                                                        g.GetComponent<Image>().color = new Color(84f / 255f, 217f / 255f, 227f / 255f); //index
+                                                        g.GetComponent<Image>().color = indexColor; //index
                                                     else
-                                                        g.GetComponent<Image>().color = new Color(134f / 255f, 250f / 255f, 104f / 255f); //ring
+                                                        g.GetComponent<Image>().color = ringColor; //ring
                                                 }
                                                 break;
                                             case 2:
-                                                g.GetComponent<Image>().color = new Color(255f / 255f, 191f / 255f, 228f / 255f); //thumb
+                                                g.GetComponent<Image>().color = thumbColor; //thumb
                                                 break;
                                         }
                                         break;
@@ -451,16 +463,16 @@ public class MidiPlayer : MonoBehaviour
                                         switch (rightHandOnceIndex - _noteIndex)
                                         {
                                             case 0:
-                                                g.GetComponent<Image>().color = new Color(255f / 255f, 118f / 255f, 68f / 255f); //pinky
+                                                g.GetComponent<Image>().color = pinkyColor; //pinky
                                                 break;
                                             case 1:
-                                                g.GetComponent<Image>().color = new Color(134f / 255f, 250f / 255f, 104f / 255f); //ring
+                                                g.GetComponent<Image>().color = ringColor; //ring
                                                 break;
                                             case 2:
-                                                g.GetComponent<Image>().color = new Color(84f / 255f, 217f / 255f, 227f / 255f); //index
+                                                g.GetComponent<Image>().color = indexColor; //index
                                                 break;
                                             case 3:
-                                                g.GetComponent<Image>().color = new Color(255f / 255f, 191f / 255f, 228f / 255f); //thumb
+                                                g.GetComponent<Image>().color = thumbColor; //thumb
                                                 break;
                                         }
                                         break;
@@ -468,19 +480,19 @@ public class MidiPlayer : MonoBehaviour
                                         switch (rightHandOnceIndex - _noteIndex)
                                         {
                                             case 0:
-                                                g.GetComponent<Image>().color = new Color(255f / 255f, 118f / 255f, 68f / 255f); //pinky
+                                                g.GetComponent<Image>().color = pinkyColor; //pinky
                                                 break;
                                             case 1:
-                                                g.GetComponent<Image>().color = new Color(134f / 255f, 250f / 255f, 104f / 255f); //ring
+                                                g.GetComponent<Image>().color = ringColor; //ring
                                                 break;
                                             case 2:
-                                                g.GetComponent<Image>().color = new Color(255f / 255f, 255f / 255f, 0f / 255f); //middle
+                                                g.GetComponent<Image>().color = middleColor; //middle
                                                 break;
                                             case 3:
-                                                g.GetComponent<Image>().color = new Color(84f / 255f, 217f / 255f, 227f / 255f); //index
+                                                g.GetComponent<Image>().color = indexColor; //index
                                                 break;
                                             case 4:
-                                                g.GetComponent<Image>().color = new Color(255f / 255f, 191f / 255f, 228f / 255f); //thumb
+                                                g.GetComponent<Image>().color = thumbColor; //thumb
                                                 break;
                                         }
                                         break;
@@ -528,7 +540,7 @@ public class MidiPlayer : MonoBehaviour
             GameObject[] gs = GameObject.FindGameObjectsWithTag("Flow");
             foreach (GameObject gsu in gs)
             {
-                if (gsu.GetComponent<RectTransform>().localPosition.y < -2000f)
+                if (gsu.GetComponent<RectTransform>().localPosition.y < -10000f)
                     Destroy(gsu);
             }
         }
@@ -676,6 +688,8 @@ public class MidiPlayer : MonoBehaviour
                 {
                     u[tempnumber] = Instantiate(noteUpImage, GameObject.Find("Canvas").transform) as GameObject;
                     u[tempnumber].GetComponent<RectTransform>().localPosition = new Vector2(-950f + (CalcImageIndex(PianoKeyDetector.noteOrder[tempnumber].ToString()) - 1) * noteSize.x / 36f * 37.2f, -300f);
+                    if(Menu.hideKeyboard)
+                        u[tempnumber].GetComponent<RectTransform>().localPosition = new Vector2(-950f + (CalcImageIndex(PianoKeyDetector.noteOrder[tempnumber].ToString()) - 1) * noteSize.x / 36f * 37.2f, -540f);
                     if (PianoKeyDetector.noteOrder[tempnumber].Length == 3)
                     {
                         Vector2 sizeDelta = u[tempnumber].GetComponent<RectTransform>().sizeDelta;
@@ -883,7 +897,7 @@ public class MidiPlayer : MonoBehaviour
         SceneManager.LoadScene("Rosetta");
         Time.timeScale = 1f;
     }
-
+    
     void SetupNextMIDI()
 	{
 		if(RepeatType == RepeatType.PlayOnlyOne)
