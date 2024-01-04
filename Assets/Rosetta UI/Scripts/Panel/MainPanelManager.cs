@@ -66,12 +66,26 @@ namespace Michsky.UI.Shift
             currentPanelAnimator = currentPanel.GetComponent<Animator>();
             currentPanelAnimator.Play(panelFadeIn);
 
+            //Menu.hideKeyboard = false;
+
             firstTime = false;
 
             if (useCulling == false)
                 return;
 
             StartCoroutine("DisablePreviousPanel");
+        }
+
+        public void HideKeyboards()
+        {
+            Menu.hideKeyboard = true;
+            print(Menu.hideKeyboard);
+        }
+
+        public void EnableKeyboards()
+        {
+            Menu.hideKeyboard = false;
+            print(Menu.hideKeyboard);
         }
 
         public void OpenFirstTab()

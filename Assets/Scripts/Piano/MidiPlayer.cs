@@ -60,7 +60,7 @@ public class MidiPlayer : MonoBehaviour
     void Start ()
 	{
         score = 0;
-        midiNoteLength = MidiNotes.Length;
+        
         pass = false;
         levelpass.SetActive(false);
         levelfail.SetActive(false);
@@ -84,12 +84,7 @@ public class MidiPlayer : MonoBehaviour
 			
 			OnPlayTrack.Invoke();
 		}
-		interval = _midi.MidiFile.DeltaTicksPerQuarterNote/4f;
-        noteSize = noteImage.GetComponent<RectTransform>().sizeDelta;
-		int t = (int)CalcTotalTime();
-		totalTimeText.text = DisplayTotalTime(t);
-        totalNoteText.text = midiNoteLength.ToString();
-        leftNoteText.text = midiNoteLength.ToString();
+		
         
         if(freeplay)
         {
@@ -142,7 +137,13 @@ public class MidiPlayer : MonoBehaviour
 
             }
         }
-        
+        midiNoteLength = MidiNotes.Length;
+        interval = _midi.MidiFile.DeltaTicksPerQuarterNote / 4f;
+        noteSize = noteImage.GetComponent<RectTransform>().sizeDelta;
+        int t = (int)CalcTotalTime();
+        totalTimeText.text = DisplayTotalTime(t);
+        totalNoteText.text = midiNoteLength.ToString();
+        leftNoteText.text = midiNoteLength.ToString();
     }
 	int CalcImageIndex(string note)
 	{
@@ -227,13 +228,12 @@ public class MidiPlayer : MonoBehaviour
 
     void Update ()
 	{
+
 		if (MIDISongs.Length <= 0)
 			enabled = false;
-
         if (_midi != null && midiNoteLength > 0 && _noteIndex < midiNoteLength)
         //if (_midi != null && MidiNotes.Length > 0 && _noteIndex < 20)
         {
-			
             _timer += Time.deltaTime * GlobalSpeed * MidiNotes[_noteIndex].Tempo;
 			currentTime += Time.deltaTime * GlobalSpeed;
 			currentTimeText.text = DisplayTotalTime((int)currentTime);
@@ -700,7 +700,7 @@ public class MidiPlayer : MonoBehaviour
         GameObject[] us = GameObject.FindGameObjectsWithTag("Flow");
         foreach(GameObject usu in us)
         {
-            if (usu.GetComponent<RectTransform>().localPosition.y > 2000f)
+            if (usu.GetComponent<RectTransform>().localPosition.y > 10000f)
                 Destroy(usu);
         }
 	}
