@@ -76,6 +76,7 @@ public class PianoKeyController : MonoBehaviour
 
 	void Awake ()
 	{
+
         Time.timeScale = 1f;
         if (Sort)
 		{

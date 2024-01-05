@@ -31,10 +31,10 @@ namespace MidiJack
     {
         #region Custom Editor Window Code
 
-        [MenuItem("Window/MIDI Jack")]
+        [MenuItem("Window/Rosetta Midi devices")]
         public static void ShowWindow()
         {
-            EditorWindow.GetWindow<MidiJackWindow>("MIDI Jack");
+            EditorWindow.GetWindow<MidiJackWindow>("Rosetta Midi devices");
         }
 
         void OnGUI()

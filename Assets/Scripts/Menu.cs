@@ -15,12 +15,12 @@ public class Menu : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+
         title.SetActive(true);
         Menupanel.SetActive(true);
         Settingspanel.SetActive(false);
         Exitpanel.SetActive(false);
         MidiPlayer.playAlong = false;
-        hideKeyboard = false;
 
 
         //spawnPosition = GameObject.Find("spawnPosition").transform.position;

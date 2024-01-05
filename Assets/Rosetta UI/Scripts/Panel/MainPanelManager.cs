@@ -58,6 +58,8 @@ namespace Michsky.UI.Shift
 
         void Awake()
         {
+            Menu.hideKeyboard = true;
+
             currentButton = panels[currentPanelIndex].buttonObject;
             currentButtonAnimator = currentButton.GetComponent<Animator>();
             currentButtonAnimator.Play(buttonFadeIn);
@@ -65,8 +67,6 @@ namespace Michsky.UI.Shift
             currentPanel = panels[currentPanelIndex].panelObject;
             currentPanelAnimator = currentPanel.GetComponent<Animator>();
             currentPanelAnimator.Play(panelFadeIn);
-
-            //Menu.hideKeyboard = false;
 
             firstTime = false;
 
