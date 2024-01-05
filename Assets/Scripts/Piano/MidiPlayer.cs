@@ -154,6 +154,9 @@ public class MidiPlayer : MonoBehaviour
             totalTimeText.text = "";
         totalNoteText.text = midiNoteLength.ToString();
         leftNoteText.text = midiNoteLength.ToString();
+
+        for (int i = 0; i < midiNoteLength; i++)
+            print(i+1 + "-" + MidiNotes[i].Note);
     }
 	int CalcImageIndex(string note)
 	{
