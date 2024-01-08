@@ -95,8 +95,29 @@ public class MidiPlayer : MonoBehaviour
 #endif
 			_midi = new MidiFileInspector(_path);
             _scoretxt = new TextAsset(txt_path);
-            
-			OnPlayTrack.Invoke();
+
+            string[] AllWords = File.ReadAllLines(txt_path);
+            string[] fingers = AllWords[2].Split(" ");
+            int l;
+            if (MidiNotes.Length > fingers.Length)
+                l = fingers.Length;
+            else
+                l = MidiNotes.Length;
+            fingerScore = new int[l];
+            Debug.LogError(l);
+            try
+            {
+                for (int i = 0; i < l; i++)
+                {
+                    fingerScore[i] = int.Parse(fingers[i]);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError(ex.Message);
+            }
+
+            OnPlayTrack.Invoke();
 		}
 		
         
@@ -978,7 +999,6 @@ public class MidiPlayer : MonoBehaviour
 
         string[] AllWords = File.ReadAllLines(txt_path);
         string[] fingers = AllWords[2].Split(" ");
-        //Debug.LogError(fingers.Length);
         int l;
         if (MidiNotes.Length > fingers.Length)
             l = fingers.Length;
@@ -998,8 +1018,6 @@ public class MidiPlayer : MonoBehaviour
             Debug.LogError(ex.Message);
         }
 
-
-
         OnPlayTrack.Invoke();
 	}
 
@@ -1008,13 +1026,36 @@ public class MidiPlayer : MonoBehaviour
 	{
 #if UNITY_EDITOR
 		_path = string.Format("{0}/MIDI/{1}.mid", Application.streamingAssetsPath, MIDISongs[0].MIDIFile.name);
+        txt_path = string.Format("{0}/Score/{1}.txt", Application.streamingAssetsPath, MIDISongs[0].MIDIFile.name);
 #else
 		_path = string.Format("{0}/MIDI/{1}.mid", Application.streamingAssetsPath, MIDISongs[0].SongFileName);
+        txt_path = string.Format("{0}/Score/{1}.txt", Application.streamingAssetsPath, MIDISongs[0].SongFileName);
 #endif
-		_midi = new MidiFileInspector(_path);
+        _midi = new MidiFileInspector(_path);
 		MidiNotes = _midi.GetNotes();
-		
-		_preset = true;
+
+        string[] AllWords = File.ReadAllLines(txt_path);
+        string[] fingers = AllWords[2].Split(" ");
+        int l;
+        if (MidiNotes.Length > fingers.Length)
+            l = fingers.Length;
+        else
+            l = MidiNotes.Length;
+        fingerScore = new int[l];
+        Debug.LogError(l);
+        try
+        {
+            for (int i = 0; i < l; i++)
+            {
+                fingerScore[i] = int.Parse(fingers[i]);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError(ex.Message);
+        }
+
+        _preset = true;
 	}
 
 	[ContextMenu("Clear MIDI")]
