@@ -11,6 +11,7 @@ using MidiJack;
 using TMPro;
 using System.Reflection;
 using Michsky.UI.Shift;
+using System.IO;
 
 public class MidiPlayer : MonoBehaviour
 {
@@ -38,11 +39,13 @@ public class MidiPlayer : MonoBehaviour
 	public UnityEvent OnPlayTrack { get; set; }
 
 	MidiFileInspector _midi;
+    TextAsset _scoretxt;
 
-	string _path;
+	string _path, txt_path;
 	string[] _keyIndex;
+    int[] fingerScore;
 	int _noteIndex = 0, leftHandSameIndex = 0, leftHandInterval = 1, leftHandOnceIndex = 0, leftHandOnceInterval = 1, rightHandSameIndex = 0, rightHandInterval = 1, rightHandOnceIndex = 0, rightHandOnceInterval = 1;
-	int sameLineNumber, continousFail = 0, midiNoteLength;
+	int sameLineNumber, continousFail = 0, midiNoteLength, scoreLength;
 	public static int _midiIndex, gamelevel = 1;
     public static int[] alongKeys;
     bool[] alongkeyspressed;
@@ -85,11 +88,14 @@ public class MidiPlayer : MonoBehaviour
 		{
 #if UNITY_EDITOR
 			_path = string.Format("{0}/MIDI/{1}.mid", Application.streamingAssetsPath, MIDISongs[0].MIDIFile.name);
+            txt_path = string.Format("{0}/Score/{1}.txt", Application.streamingAssetsPath, MIDISongs[0].MIDIFile.name);
 #else
 			_path = string.Format("{0}/MIDI/{1}.mid", Application.streamingAssetsPath, MIDISongs[0].SongFileName);
+            txt_path = string.Format("{0}/Score/{1}.txt", Application.streamingAssetsPath, MIDISongs[0].SongFileName);
 #endif
 			_midi = new MidiFileInspector(_path);
-			
+            _scoretxt = new TextAsset(txt_path);
+            
 			OnPlayTrack.Invoke();
 		}
 		
@@ -276,260 +282,288 @@ public class MidiPlayer : MonoBehaviour
                         Vector2 sizeDelta = g.GetComponent<RectTransform>().sizeDelta;
                         g.GetComponent<RectTransform>().sizeDelta = new Vector2(sizeDelta.x, (int)(MidiNotes[_noteIndex].Length * sizeDelta.y * 100f) / 10f);
                     }
-					switch(gamelevel)
-					{
-						case 1:
-						case 2:
-						case 3:
-                            
-                            if ((MidiNotes[_noteIndex].Channel == 0 && CheckChannels()) || (MidiNotes[_noteIndex].Channel == 2 && !CheckChannels())) //left hand
-                            {
-								CheckLeftHandNotes();
-                                switch (leftHandOnceInterval) //number of keys that is pressed with one hand at once //! not same time
-								{
-									case 1:
-									switch (MidiNotes[_noteIndex].Note[0])
-									{
-										case 'C':
-											if (MidiNotes[_noteIndex].Channel != MidiNotes[_noteIndex+1].Channel)
-											{
-                                                g.GetComponent<Image>().color = thumbColor; //thumb
-                                                break;
-                                            }
-											else
-											{
-                                                
-                                                break;
-                                            }
-										case 'F':
-                                            g.GetComponent<Image>().color = pinkyColor; //pinky
-											break;
-                                        case 'D':
-                                        case 'G':
-                                            g.GetComponent<Image>().color = ringColor; //ring
-											break;
-                                        case 'E':
-                                        case 'A':
-                                            g.GetComponent<Image>().color = middleColor; //middle
-                                            break;
-                                        case 'B':
-                                            g.GetComponent<Image>().color = indexColor; //index
-                                            break;
-                                    }
-									break;
-									case 2: //when pressing two keys at once
-										if (_noteIndex == leftHandOnceIndex)
-                                            g.GetComponent<Image>().color = thumbColor; //thumb
-                                        else
-                                        {
-											int interval = PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex + 1].Note) - PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex].Note);
 
-                                            if (interval <= 4)
-											{
-                                                g.GetComponent<Image>().color = indexColor; //index
-                                            }
-											else if(interval <= 7)
-                                                g.GetComponent<Image>().color = ringColor; //ring
-											else
-                                                g.GetComponent<Image>().color = pinkyColor; //pinky
-                                        }
-                                        break;
-                                    case 3:
-                                        switch (leftHandOnceIndex - _noteIndex)
-										{
-											case 0:
-                                                g.GetComponent<Image>().color = thumbColor; //thumb
-												break;
-                                            case 1:
-                                                g.GetComponent<Image>().color = middleColor; //middle
-                                                if (MidiNotes[_noteIndex].Note.Length == 3)
-                                                {
-                                                    if(PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex + 1].Note) - PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex].Note) <= 4)
-                                                        g.GetComponent<Image>().color = indexColor; //index
-                                                    else
-                                                        g.GetComponent<Image>().color = ringColor; //ring
-                                                }
-                                                break;
-											case 2:
-                                                g.GetComponent<Image>().color = pinkyColor; //pinky
-                                                break;
-										}
-                                        break;
-                                    case 4:
-                                        switch (leftHandOnceIndex - _noteIndex)
-                                        {
-                                            case 0:
-                                                g.GetComponent<Image>().color = thumbColor; //thumb
-                                                break;
-                                            case 1:
-                                                g.GetComponent<Image>().color = indexColor; //index
-                                                break;
-                                            case 2:
-                                                g.GetComponent<Image>().color = ringColor; //ring
-                                                break;
-                                            case 3:
-                                                g.GetComponent<Image>().color = pinkyColor; //pinky
-                                                break;
-                                        }
-                                        break;
-                                    case 5:
-                                        switch (leftHandOnceIndex - _noteIndex)
-                                        {
-                                            case 0:
-                                                g.GetComponent<Image>().color = thumbColor; //thumb
-                                                break;
-                                            case 1:
-                                                g.GetComponent<Image>().color = indexColor; //index
-                                                break;
-                                            case 2:
-                                                g.GetComponent<Image>().color = middleColor; //middle
-                                                break;
-                                            case 3:
-                                                g.GetComponent<Image>().color = ringColor; //ring
-                                                break;
-                                            case 4:
-                                                g.GetComponent<Image>().color = pinkyColor; //pinky
-                                                break;
-                                        }
-                                        break;
-                                }
-                            }
-                            else
-                            {
-                                CheckRightHandNotes();
-                                switch (rightHandOnceInterval) //number of keys that is pressed with one hand at once //! not same time
+                    if(_noteIndex < fingerScore.Length)//coloring according to the text score
+                    {
+                        switch(fingerScore[_noteIndex])
+                        {
+                            case 1:
+                            case 10:
+                                g.GetComponent<Image>().color = pinkyColor;
+                                break;
+                            case 2:
+                            case 9:
+                                g.GetComponent<Image>().color = ringColor;
+                                break;
+                            case 3:
+                            case 8:
+                                g.GetComponent<Image>().color = middleColor;
+                                break;
+                            case 4:
+                            case 7:
+                                g.GetComponent<Image>().color = indexColor;
+                                break;
+                            case 5:
+                            case 6:
+                                g.GetComponent<Image>().color = thumbColor;
+                                break;
+                        }       
+                    }
+                    else//traditional one, two, or three, four pressing at the same time based coloring
+					    switch(gamelevel)
+					    {
+						    case 1:
+						    case 2:
+						    case 3:
+                            
+                                if ((MidiNotes[_noteIndex].Channel == 0 && CheckChannels()) || (MidiNotes[_noteIndex].Channel == 2 && !CheckChannels())) //left hand
                                 {
-                                    case 1:
-                                        switch (MidiNotes[_noteIndex].Note[0])
-                                        {
-                                            case 'C':
-                                                if (MidiNotes[_noteIndex].Channel != MidiNotes[_noteIndex + 1].Channel)
-                                                    g.GetComponent<Image>().color = pinkyColor; //pinky
-                                                else
+								    CheckLeftHandNotes();
+                                    switch (leftHandOnceInterval) //number of keys that is pressed with one hand at once //! not same time
+								    {
+									    case 1:
+									    switch (MidiNotes[_noteIndex].Note[0])
+									    {
+										    case 'C':
+											    if (MidiNotes[_noteIndex].Channel != MidiNotes[_noteIndex+1].Channel)
+											    {
                                                     g.GetComponent<Image>().color = thumbColor; //thumb
-                                                break;
-                                            case 'F':
-                                                g.GetComponent<Image>().color = thumbColor; //thumb
-                                                break;
+                                                    break;
+                                                }
+											    else
+											    {
+                                                
+                                                    break;
+                                                }
+										    case 'F':
+                                                g.GetComponent<Image>().color = pinkyColor; //pinky
+											    break;
                                             case 'D':
                                             case 'G':
-                                                g.GetComponent<Image>().color = indexColor; //index
-                                                break;
+                                                g.GetComponent<Image>().color = ringColor; //ring
+											    break;
                                             case 'E':
                                             case 'A':
                                                 g.GetComponent<Image>().color = middleColor; //middle
                                                 break;
                                             case 'B':
-                                                g.GetComponent<Image>().color = ringColor; //ring
+                                                g.GetComponent<Image>().color = indexColor; //index
                                                 break;
                                         }
-                                        break;
-                                    case 2: //when pressing two keys at once
-                                        if (_noteIndex != rightHandOnceIndex)
-                                            g.GetComponent<Image>().color = thumbColor; //thumb
-                                        else
-                                        {
-                                            int interval = PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex].Note) - PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex-1].Note);
-
-                                            if (interval <= 4)
-                                            {
-                                                g.GetComponent<Image>().color = indexColor; //index
-                                            }
-                                            else if (interval <= 7)
-                                                g.GetComponent<Image>().color = ringColor; //ring
+									    break;
+									    case 2: //when pressing two keys at once
+										    if (_noteIndex == leftHandOnceIndex)
+                                                g.GetComponent<Image>().color = thumbColor; //thumb
                                             else
-                                                g.GetComponent<Image>().color = pinkyColor; //pinky
-                                        }
-                                        break;
-                                    case 3:
-                                        switch (rightHandOnceIndex - _noteIndex)
-                                        {
-                                            case 0:
-                                                g.GetComponent<Image>().color = pinkyColor; //pinky
-                                                break;
-                                            case 1:
-                                                g.GetComponent<Image>().color = middleColor; //middle
-                                                if (MidiNotes[_noteIndex].Note.Length == 3)
-                                                {
-                                                    if (PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex].Note) - PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex-1].Note) <= 4)
-                                                        g.GetComponent<Image>().color = indexColor; //index
-                                                    else
-                                                        g.GetComponent<Image>().color = ringColor; //ring
+                                            {
+											    int interval = PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex + 1].Note) - PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex].Note);
+
+                                                if (interval <= 4)
+											    {
+                                                    g.GetComponent<Image>().color = indexColor; //index
                                                 }
-                                                break;
-                                            case 2:
-                                                g.GetComponent<Image>().color = thumbColor; //thumb
-                                                break;
-                                        }
-                                        break;
-                                    case 4:
-                                        switch (rightHandOnceIndex - _noteIndex)
-                                        {
-                                            case 0:
-                                                g.GetComponent<Image>().color = pinkyColor; //pinky
-                                                break;
-                                            case 1:
-                                                g.GetComponent<Image>().color = ringColor; //ring
-                                                break;
-                                            case 2:
-                                                g.GetComponent<Image>().color = indexColor; //index
-                                                break;
-                                            case 3:
-                                                g.GetComponent<Image>().color = thumbColor; //thumb
-                                                break;
-                                        }
-                                        break;
-                                    case 5:
-                                        switch (rightHandOnceIndex - _noteIndex)
-                                        {
-                                            case 0:
-                                                g.GetComponent<Image>().color = pinkyColor; //pinky
-                                                break;
-                                            case 1:
-                                                g.GetComponent<Image>().color = ringColor; //ring
-                                                break;
-                                            case 2:
-                                                g.GetComponent<Image>().color = middleColor; //middle
-                                                break;
-                                            case 3:
-                                                g.GetComponent<Image>().color = indexColor; //index
-                                                break;
-                                            case 4:
-                                                g.GetComponent<Image>().color = thumbColor; //thumb
-                                                break;
-                                        }
-                                        break;
+											    else if(interval <= 7)
+                                                    g.GetComponent<Image>().color = ringColor; //ring
+											    else
+                                                    g.GetComponent<Image>().color = pinkyColor; //pinky
+                                            }
+                                            break;
+                                        case 3:
+                                            switch (leftHandOnceIndex - _noteIndex)
+										    {
+											    case 0:
+                                                    g.GetComponent<Image>().color = thumbColor; //thumb
+												    break;
+                                                case 1:
+                                                    g.GetComponent<Image>().color = middleColor; //middle
+                                                    if (MidiNotes[_noteIndex].Note.Length == 3)
+                                                    {
+                                                        if(PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex + 1].Note) - PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex].Note) <= 4)
+                                                            g.GetComponent<Image>().color = indexColor; //index
+                                                        else
+                                                            g.GetComponent<Image>().color = ringColor; //ring
+                                                    }
+                                                    break;
+											    case 2:
+                                                    g.GetComponent<Image>().color = pinkyColor; //pinky
+                                                    break;
+										    }
+                                            break;
+                                        case 4:
+                                            switch (leftHandOnceIndex - _noteIndex)
+                                            {
+                                                case 0:
+                                                    g.GetComponent<Image>().color = thumbColor; //thumb
+                                                    break;
+                                                case 1:
+                                                    g.GetComponent<Image>().color = indexColor; //index
+                                                    break;
+                                                case 2:
+                                                    g.GetComponent<Image>().color = ringColor; //ring
+                                                    break;
+                                                case 3:
+                                                    g.GetComponent<Image>().color = pinkyColor; //pinky
+                                                    break;
+                                            }
+                                            break;
+                                        case 5:
+                                            switch (leftHandOnceIndex - _noteIndex)
+                                            {
+                                                case 0:
+                                                    g.GetComponent<Image>().color = thumbColor; //thumb
+                                                    break;
+                                                case 1:
+                                                    g.GetComponent<Image>().color = indexColor; //index
+                                                    break;
+                                                case 2:
+                                                    g.GetComponent<Image>().color = middleColor; //middle
+                                                    break;
+                                                case 3:
+                                                    g.GetComponent<Image>().color = ringColor; //ring
+                                                    break;
+                                                case 4:
+                                                    g.GetComponent<Image>().color = pinkyColor; //pinky
+                                                    break;
+                                            }
+                                            break;
+                                    }
                                 }
-                            }
-                            break;
-						case 4:
-                            print(MidiNotes[_noteIndex].Channel + "+" + MidiNotes[_noteIndex].StartTime + "+" + MidiNotes[_noteIndex].Note);
-                            if ((MidiNotes[_noteIndex].Channel == 1 && CheckChannels()) || (MidiNotes[_noteIndex].Channel == 2 && !CheckChannels())) //left - blue
-                            {
-                                g.GetComponent<Image>().color = new Color(90f / 255f, 165f / 255f, 234f / 255f);
+                                else
+                                {
+                                    CheckRightHandNotes();
+                                    switch (rightHandOnceInterval) //number of keys that is pressed with one hand at once //! not same time
+                                    {
+                                        case 1:
+                                            switch (MidiNotes[_noteIndex].Note[0])
+                                            {
+                                                case 'C':
+                                                    if (MidiNotes[_noteIndex].Channel != MidiNotes[_noteIndex + 1].Channel)
+                                                        g.GetComponent<Image>().color = pinkyColor; //pinky
+                                                    else
+                                                        g.GetComponent<Image>().color = thumbColor; //thumb
+                                                    break;
+                                                case 'F':
+                                                    g.GetComponent<Image>().color = thumbColor; //thumb
+                                                    break;
+                                                case 'D':
+                                                case 'G':
+                                                    g.GetComponent<Image>().color = indexColor; //index
+                                                    break;
+                                                case 'E':
+                                                case 'A':
+                                                    g.GetComponent<Image>().color = middleColor; //middle
+                                                    break;
+                                                case 'B':
+                                                    g.GetComponent<Image>().color = ringColor; //ring
+                                                    break;
+                                            }
+                                            break;
+                                        case 2: //when pressing two keys at once
+                                            if (_noteIndex != rightHandOnceIndex)
+                                                g.GetComponent<Image>().color = thumbColor; //thumb
+                                            else
+                                            {
+                                                int interval = PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex].Note) - PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex-1].Note);
+
+                                                if (interval <= 4)
+                                                {
+                                                    g.GetComponent<Image>().color = indexColor; //index
+                                                }
+                                                else if (interval <= 7)
+                                                    g.GetComponent<Image>().color = ringColor; //ring
+                                                else
+                                                    g.GetComponent<Image>().color = pinkyColor; //pinky
+                                            }
+                                            break;
+                                        case 3:
+                                            switch (rightHandOnceIndex - _noteIndex)
+                                            {
+                                                case 0:
+                                                    g.GetComponent<Image>().color = pinkyColor; //pinky
+                                                    break;
+                                                case 1:
+                                                    g.GetComponent<Image>().color = middleColor; //middle
+                                                    if (MidiNotes[_noteIndex].Note.Length == 3)
+                                                    {
+                                                        if (PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex].Note) - PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex-1].Note) <= 4)
+                                                            g.GetComponent<Image>().color = indexColor; //index
+                                                        else
+                                                            g.GetComponent<Image>().color = ringColor; //ring
+                                                    }
+                                                    break;
+                                                case 2:
+                                                    g.GetComponent<Image>().color = thumbColor; //thumb
+                                                    break;
+                                            }
+                                            break;
+                                        case 4:
+                                            switch (rightHandOnceIndex - _noteIndex)
+                                            {
+                                                case 0:
+                                                    g.GetComponent<Image>().color = pinkyColor; //pinky
+                                                    break;
+                                                case 1:
+                                                    g.GetComponent<Image>().color = ringColor; //ring
+                                                    break;
+                                                case 2:
+                                                    g.GetComponent<Image>().color = indexColor; //index
+                                                    break;
+                                                case 3:
+                                                    g.GetComponent<Image>().color = thumbColor; //thumb
+                                                    break;
+                                            }
+                                            break;
+                                        case 5:
+                                            switch (rightHandOnceIndex - _noteIndex)
+                                            {
+                                                case 0:
+                                                    g.GetComponent<Image>().color = pinkyColor; //pinky
+                                                    break;
+                                                case 1:
+                                                    g.GetComponent<Image>().color = ringColor; //ring
+                                                    break;
+                                                case 2:
+                                                    g.GetComponent<Image>().color = middleColor; //middle
+                                                    break;
+                                                case 3:
+                                                    g.GetComponent<Image>().color = indexColor; //index
+                                                    break;
+                                                case 4:
+                                                    g.GetComponent<Image>().color = thumbColor; //thumb
+                                                    break;
+                                            }
+                                            break;
+                                    }
+                                }
+                                break;
+						    case 4:
+                                print(MidiNotes[_noteIndex].Channel + "+" + MidiNotes[_noteIndex].StartTime + "+" + MidiNotes[_noteIndex].Note);
+                                if ((MidiNotes[_noteIndex].Channel == 1 && CheckChannels()) || (MidiNotes[_noteIndex].Channel == 2 && !CheckChannels())) //left - blue
+                                {
+                                    g.GetComponent<Image>().color = new Color(90f / 255f, 165f / 255f, 234f / 255f);
+                                    if (MidiNotes[_noteIndex].Note.Length == 3)
+                                    {
+                                        g.GetComponent<Image>().color = new Color(1f / 255f, 133f / 255f, 255f / 255f);
+                                    }
+                                }
+                                else
+                                {
+                                    g.GetComponent<Image>().color = new Color(183f / 255f, 65f / 255f, 139f / 255f);
+                                    if (MidiNotes[_noteIndex].Note.Length == 3)
+                                    {
+                                        g.GetComponent<Image>().color = new Color(157f / 255f, 17f / 255f, 104f / 255f);
+                                    }
+                                }
+                                break;
+						    case 5:
+						    case 6:
+                                g.GetComponent<Image>().color = new Color(90f / 255f, 165f / 255f, 234f / 255f); //all blue - one color
                                 if (MidiNotes[_noteIndex].Note.Length == 3)
                                 {
                                     g.GetComponent<Image>().color = new Color(1f / 255f, 133f / 255f, 255f / 255f);
                                 }
-                            }
-                            else
-                            {
-                                g.GetComponent<Image>().color = new Color(183f / 255f, 65f / 255f, 139f / 255f);
-                                if (MidiNotes[_noteIndex].Note.Length == 3)
-                                {
-                                    g.GetComponent<Image>().color = new Color(157f / 255f, 17f / 255f, 104f / 255f);
-                                }
-                            }
-                            break;
-						case 5:
-						case 6:
-                            g.GetComponent<Image>().color = new Color(90f / 255f, 165f / 255f, 234f / 255f); //all blue - one color
-                            if (MidiNotes[_noteIndex].Note.Length == 3)
-                            {
-                                g.GetComponent<Image>().color = new Color(1f / 255f, 133f / 255f, 255f / 255f);
-                            }
-                            break;
-					}
+                                break;
+					    }
                     
 					g.name = MidiNotes[_noteIndex].Channel + "+" + leftHandOnceInterval + "+" + MidiNotes[_noteIndex].StartTime + "+" + MidiNotes[_noteIndex].Note;
 					
@@ -933,14 +967,40 @@ public class MidiPlayer : MonoBehaviour
 
 #if UNITY_EDITOR
 		_path = string.Format("{0}/MIDI/{1}.mid", Application.streamingAssetsPath, MIDISongs[_midiIndex].MIDIFile.name);
+        txt_path = string.Format("{0}/Score/{1}.txt", Application.streamingAssetsPath, MIDISongs[0].MIDIFile.name);
 #else
 		_path = string.Format("{0}/MIDI/{1}.mid", Application.streamingAssetsPath, MIDISongs[_midiIndex].SongFileName);
+        txt_path = string.Format("{0}/Score/{1}.txt", Application.streamingAssetsPath, MIDISongs[0].SongFileName);
 #endif
-		_midi = new MidiFileInspector(_path);
-		MidiNotes = _midi.GetNotes();
-		_noteIndex = 0;
+        _midi = new MidiFileInspector(_path);
+        MidiNotes = _midi.GetNotes();
+        _noteIndex = 0;
 
-		OnPlayTrack.Invoke();
+        string[] AllWords = File.ReadAllLines(txt_path);
+        string[] fingers = AllWords[2].Split(" ");
+        //Debug.LogError(fingers.Length);
+        int l;
+        if (MidiNotes.Length > fingers.Length)
+            l = fingers.Length;
+        else
+            l = MidiNotes.Length;
+        fingerScore = new int[l];
+        Debug.LogError(l);
+        try
+        {
+            for (int i = 0; i < l; i++)
+            {
+                fingerScore[i] = int.Parse(fingers[i]);
+            }
+        }
+        catch(Exception ex)
+        {
+            Debug.LogError(ex.Message);
+        }
+
+
+
+        OnPlayTrack.Invoke();
 	}
 
 	[ContextMenu("Preset MIDI")]
