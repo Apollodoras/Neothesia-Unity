@@ -988,10 +988,10 @@ public class MidiPlayer : MonoBehaviour
 
 #if UNITY_EDITOR
 		_path = string.Format("{0}/MIDI/{1}.mid", Application.streamingAssetsPath, MIDISongs[_midiIndex].MIDIFile.name);
-        txt_path = string.Format("{0}/Score/{1}.txt", Application.streamingAssetsPath, MIDISongs[0].MIDIFile.name);
+        txt_path = string.Format("{0}/Score/{1}.txt", Application.streamingAssetsPath, MIDISongs[_midiIndex].MIDIFile.name);
 #else
 		_path = string.Format("{0}/MIDI/{1}.mid", Application.streamingAssetsPath, MIDISongs[_midiIndex].SongFileName);
-        txt_path = string.Format("{0}/Score/{1}.txt", Application.streamingAssetsPath, MIDISongs[0].SongFileName);
+        txt_path = string.Format("{0}/Score/{1}.txt", Application.streamingAssetsPath, MIDISongs[_midiIndex].SongFileName);
 #endif
         _midi = new MidiFileInspector(_path);
         MidiNotes = _midi.GetNotes();
