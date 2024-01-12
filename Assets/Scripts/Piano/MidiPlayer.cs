@@ -62,7 +62,7 @@ public class MidiPlayer : MonoBehaviour
 
     Color pinkyColor = new Color(241f / 255f, 86f / 255f, 112f / 255f);//pinky
     Color ringColor = new Color(58f / 255f, 139f / 255f, 241f / 255f);//ring
-    Color middleColor = new Color(110f / 255f, 67f / 255f, 245f / 255f);//middle
+    Color middleColor = new Color(130f / 255f, 93f / 255f, 245f / 255f);//middle
     Color indexColor = new Color(233f / 255f, 194f / 225f, 35f / 255f);//index
     Color thumbColor = new Color(48f / 255f, 162f / 255f, 109f / 255f);//thumb
 
@@ -134,7 +134,7 @@ public class MidiPlayer : MonoBehaviour
         }
         else
         {
-            scoreTexts.gameObject.SetActive(true);
+            //scoreTexts.gameObject.SetActive(true);
             switch (gamelevel)
             {
                 case 1:
