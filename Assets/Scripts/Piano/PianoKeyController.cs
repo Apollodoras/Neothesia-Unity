@@ -8,6 +8,7 @@ public class PianoKeyController : MonoBehaviour
 {
 	[Header("References")]
 	public MidiPlayer MidiPlayer;
+	//public DrumMidiPlayer MidiPlayer;
 	public Transform PianoKeysParent;
 	public Transform SustainPedal;
 	public AudioClip[] Notes;

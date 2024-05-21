@@ -1,2 +1,2 @@
-# Neothesia-Unity
-Midi read and play piano game made with Unity C#
+# Rosetta
+Midi analysis + Midi keyboard Input + Colorful notes according to fingers and various levels
