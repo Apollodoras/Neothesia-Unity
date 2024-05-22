@@ -164,6 +164,7 @@ public class DrumMidiPlayer : MonoBehaviour
                     totalNoteText.gameObject.SetActive(false);
                     //scoreTexts.gameObject.SetActive(false);
                     scoreDisplay.SetActive(true);
+                    GetComponent<AudioSource>().enabled = false;
                     break;
                 case 2:
                     GlobalSpeed = 1f;
@@ -432,7 +433,7 @@ public class DrumMidiPlayer : MonoBehaviour
 					//StartCoroutine(WaitAndPlay(1.4f, _noteIndex));
 
 				}
-                StartCoroutine(WaitAndPlay(2.6f, _noteIndex));
+                StartCoroutine(WaitAndPlay(1.6f, _noteIndex));
 
                 _noteIndex++;
 				
@@ -666,17 +667,20 @@ public class DrumMidiPlayer : MonoBehaviour
                     }
                 }
 
-                if (ShowMIDIChannelColours)
+                if(gamelevel == 1)
                 {
-                    PianoKeyDetector.PianoNotes[MidiNotes[_index].Note].Play(MIDIChannelColours[MidiNotes[_index].Channel],
-                                                                            MidiNotes[_index].Velocity,
-                                                                            MidiNotes[_index].Length,
-                                                                            PianoKeyDetector.MidiPlayer.GlobalSpeed * MIDISongs[_midiIndex].Speed);
+                    if (ShowMIDIChannelColours)
+                    {
+                        PianoKeyDetector.PianoNotes[MidiNotes[_index].Note].Play(MIDIChannelColours[MidiNotes[_index].Channel],
+                                                                                MidiNotes[_index].Velocity,
+                                                                                MidiNotes[_index].Length,
+                                                                                PianoKeyDetector.MidiPlayer.GlobalSpeed * MIDISongs[_midiIndex].Speed);
+                    }
+                    else
+                        PianoKeyDetector.PianoNotes[MidiNotes[_index].Note].Play(MidiNotes[_index].Velocity,
+                                                                                MidiNotes[_index].Length,
+                                                                                PianoKeyDetector.MidiPlayer.GlobalSpeed * MIDISongs[_midiIndex].Speed);
                 }
-                else
-                    PianoKeyDetector.PianoNotes[MidiNotes[_index].Note].Play(MidiNotes[_index].Velocity,
-                                                                            MidiNotes[_index].Length,
-                                                                            PianoKeyDetector.MidiPlayer.GlobalSpeed * MIDISongs[_midiIndex].Speed);
                 currentNoteText.text = (_index + 1).ToString();
                 leftNoteText.text = (MidiNotes.Length - _index - 1).ToString();
                 
