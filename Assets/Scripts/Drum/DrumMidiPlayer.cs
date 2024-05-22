@@ -29,7 +29,7 @@ public class DrumMidiPlayer : MonoBehaviour
 	public KeyMode KeyMode;
 	public bool ShowMIDIChannelColours;
 	public Color[] MIDIChannelColours;
-	public TMP_Text currentTimeText, totalTimeText, currentNoteText, totalNoteText, leftNoteText, scoreTexts;
+	public TMP_Text currentTimeText, totalTimeText, currentNoteText, totalNoteText, leftNoteText, scoreTexts, percentageProgress;
 
 	[Header("Ensure Song Name is filled for builds")]
 	public MidiSong[] MIDISongs;
@@ -46,7 +46,7 @@ public class DrumMidiPlayer : MonoBehaviour
     int[] fingerScore;
 	int _noteIndex = 0, leftHandSameIndex = 0, leftHandInterval = 1, leftHandOnceIndex = 0, leftHandOnceInterval = 1, rightHandSameIndex = 0, rightHandInterval = 1, rightHandOnceIndex = 0, rightHandOnceInterval = 1;
 	int sameLineNumber, continousFail = 0, midiNoteLength, scoreLength;
-	public static int _midiIndex, gamelevel = 1;
+	public static int _midiIndex, gamelevel = 2;
     public static int[] alongKeys;
     bool[] alongkeyspressed;
     public static float score = 0;
@@ -79,6 +79,7 @@ public class DrumMidiPlayer : MonoBehaviour
 
     void Start ()
 	{
+        //StartCoroutine(WaitAndHalt());
         startTime = Time.realtimeSinceStartup;
 
         score = 0;
@@ -232,7 +233,25 @@ public class DrumMidiPlayer : MonoBehaviour
         }
         
     }
-	
+	IEnumerator WaitAndHalt()
+    {
+        yield return new WaitForSeconds(0.2f);
+        Time.timeScale = 0f;
+    }
+
+    public void PracticeButton()
+    {
+        gamelevel = 1;
+        Time.timeScale = 1f;
+        SceneManager.LoadScene("Drum");
+    }
+
+    public void PlayButton()
+    {
+        gamelevel = 2;
+        Time.timeScale = 1f;
+        SceneManager.LoadScene("Drum");
+    }
     int getKeyNumber(int noteNumber)
     {
         return noteNumber + 21;
@@ -347,7 +366,9 @@ public class DrumMidiPlayer : MonoBehaviour
             //Debug.LogError(MidiNotes[_noteIndex].Tempo);
             while (_noteIndex < midiNoteLength && MidiNotes[_noteIndex].StartTime < _timer && !freeplay)
 			{
-				timeDisplay.GetComponent<Slider>().value = (float)((_timer-800) / MidiNotes[midiNoteLength - 1].StartTime);
+                percentageProgress.text = ((int)((_timer - 800)*100 / MidiNotes[midiNoteLength - 1].StartTime)).ToString()+"%";
+
+                timeDisplay.GetComponent<Slider>().value = (float)((_timer-800) / MidiNotes[midiNoteLength - 1].StartTime);
                 //if (PianoKeyDetector.PianoNotes.ContainsKey(MidiNotes[_noteIndex].Note) && DetectIfDrumNote(MidiNotes[_noteIndex].Note))
                 if (DetectIfDrumNote(MidiNotes[_noteIndex].Note))
                 {
@@ -605,7 +626,7 @@ public class DrumMidiPlayer : MonoBehaviour
         yield return new WaitForSeconds(1f);
         levelfail.SetActive(true);
         levelendbar.SetActive(true);
-        StartCoroutine(DelayedOpenMenu());
+        //StartCoroutine(DelayedOpenMenu());
     }
     IEnumerator DelayedOpenMenu()
     {
