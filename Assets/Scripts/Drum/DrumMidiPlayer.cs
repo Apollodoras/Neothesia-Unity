@@ -299,7 +299,7 @@ public class DrumMidiPlayer : MonoBehaviour
                 }
             }
         }
-        if (continousFail >= 3)
+        if (continousFail >= 10)
         {
             playended = true;
         }
