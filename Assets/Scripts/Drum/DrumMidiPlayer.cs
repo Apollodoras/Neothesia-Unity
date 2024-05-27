@@ -272,7 +272,7 @@ public class DrumMidiPlayer : MonoBehaviour
                     {
                         alongkeyspressed[i] = true;
 
-                        score += bonus;
+                        score += bonus; //!critical
                         continousFail = 0;
                         scoreTexts.text = ((int)(score * 1000f) / 1000f).ToString();
 
@@ -518,7 +518,7 @@ public class DrumMidiPlayer : MonoBehaviour
             switch (gamelevel)
             {
                 case 1:
-                    
+                case 3:
                     for(keynumber = 0; keynumber < 88 ; keynumber++) //on piano keyboard number 1~88 vs real midi notes 21~108
                     {
                         if(MidiMaster.GetKeyDown(getNoteNumber(keynumber)) || Input.GetKeyUp(KeyCode.E))
@@ -528,7 +528,6 @@ public class DrumMidiPlayer : MonoBehaviour
                             {
                                 //Here examine with the drum keys
                                 if (alongKeys[i] == getNoteNumber(keynumber) && !alongkeyspressed[i])
-                                    print(alongKeys[i]);
                                 {
                                     alongkeyspressed[i] = true;
                                     score++;
@@ -583,7 +582,7 @@ public class DrumMidiPlayer : MonoBehaviour
                         }
                     }
                     break;
-                case 3:
+                //case 3:
                 case 4:
                 case 5:
                 case 6:
@@ -659,12 +658,12 @@ public class DrumMidiPlayer : MonoBehaviour
         yield return new WaitForSeconds(1f);
         levelfail.SetActive(true);
         levelendbar.SetActive(true);
-        //StartCoroutine(DelayedOpenMenu());
+        StartCoroutine(DelayedOpenMenu());
     }
     IEnumerator DelayedOpenMenu()
     {
         yield return new WaitForSeconds(6.5f);
-        SceneManager.LoadScene("Rosetta");
+        SceneManager.LoadScene("Drum");
     }
 	IEnumerator WaitAndPlay(float t, int _index, bool isDrum)
 	{
