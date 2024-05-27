@@ -46,7 +46,7 @@ public class DrumMidiPlayer : MonoBehaviour
     int[] fingerScore;
 	int _noteIndex = 0, leftHandSameIndex = 0, leftHandInterval = 1, leftHandOnceIndex = 0, leftHandOnceInterval = 1, rightHandSameIndex = 0, rightHandInterval = 1, rightHandOnceIndex = 0, rightHandOnceInterval = 1;
 	int sameLineNumber, continousFail = 0, midiNoteLength, scoreLength;
-	public static int _midiIndex, gamelevel = 2;
+	public static int _midiIndex, gamelevel = 1;
     public static int[] alongKeys;
     bool[] alongkeyspressed;
     public static float score = 0;
@@ -203,7 +203,7 @@ public class DrumMidiPlayer : MonoBehaviour
         leftNoteText.text = midiNoteLength.ToString();
 
         for (int i = 0; i < midiNoteLength; i++)
-            print(i+1 + "-" + MidiNotes[i].Note + "-" + (PianoKeyDetector.noteOrder.IndexOf(MidiNotes[i].Note) + 1).ToString());
+            print(i + 1 + "-" + MidiNotes[i].Note + "-" + (PianoKeyDetector.noteOrder.IndexOf(MidiNotes[i].Note) + 1).ToString());
     }
 	int CalcImageIndex(string note)
 	{
@@ -313,10 +313,10 @@ public class DrumMidiPlayer : MonoBehaviour
             case "Closed Hi-Hat":
             case "Open Hi-Hat":
             case "Acoustic Snare":
-            case "Crash Cymbal 2":
-            case "Ride Cymbal":
-            case "Low Floor Tom":
-            case "Mid Floor Tom":
+            case "Crash Cymbal 1":
+            case "Ride Cymbal 1":
+            case "Low Tom":
+            case "High Mid Tom":
             case "High Floor Tom":
                 return true;
         }
@@ -371,8 +371,10 @@ public class DrumMidiPlayer : MonoBehaviour
 
                 timeDisplay.GetComponent<Slider>().value = (float)((_timer-800) / MidiNotes[midiNoteLength - 1].StartTime);
                 //if (PianoKeyDetector.PianoNotes.ContainsKey(MidiNotes[_noteIndex].Note) && DetectIfDrumNote(MidiNotes[_noteIndex].Note))
+                bool isDrum = false;
                 if (DetectIfDrumNote(MidiNotes[_noteIndex].Note))
                 {
+                    isDrum = true;
                     GameObject g = Instantiate(noteImage, GameObject.Find("DrumNotes").transform) as GameObject;
                     //if (MidiNotes[0].Length <= 0.1f)
                     //int index = PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex].Note);
@@ -433,7 +435,7 @@ public class DrumMidiPlayer : MonoBehaviour
 					//StartCoroutine(WaitAndPlay(1.4f, _noteIndex));
 
 				}
-                StartCoroutine(WaitAndPlay(1.6f, _noteIndex));
+                StartCoroutine(WaitAndPlay(1.6f, _noteIndex, isDrum));
 
                 _noteIndex++;
 				
@@ -495,7 +497,7 @@ public class DrumMidiPlayer : MonoBehaviour
                             int r = 0;
                             for(int i = alongKeys.Length - 1; i >= 0; i--)
                             {
-                                print(sameLineNumber);
+                                
                                 if (alongKeys[i] == notenumber && !alongkeyspressed[i])
                                 {
                                     alongkeyspressed[i] = true;
@@ -634,37 +636,42 @@ public class DrumMidiPlayer : MonoBehaviour
         yield return new WaitForSeconds(6.5f);
         SceneManager.LoadScene("Rosetta");
     }
-	IEnumerator WaitAndPlay(float t, int _index)
+	IEnumerator WaitAndPlay(float t, int _index, bool isDrum)
 	{
 		yield return new WaitForSeconds(t);
 		//try
 		{
             if (PianoKeyDetector.PianoNotes.ContainsKey(MidiNotes[_index].Note))
             {
-                if (_index == 0)
-                    sameLineNumber = 1;
-                else if (_index > 0 && MidiNotes[_index].StartTime == MidiNotes[_index - 1].StartTime)
-				{
-                    sameLineNumber++;
-					
-                }
-                else
-                    sameLineNumber = 1;
-                if (_index < MidiNotes.Length - 1 && MidiNotes[_index].StartTime != MidiNotes[_index + 1].StartTime)
-				{
-					alongKeys = new int[sameLineNumber];
-					for(int i = sameLineNumber-1; i >= 0; i--)
-					{
-                        alongKeys[i] = PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_index - sameLineNumber + i + 1].Note);
-                    }
-				}
-                else if(_index == MidiNotes.Length - 1)
+                if(isDrum)
                 {
-                    alongKeys = new int[sameLineNumber];
-                    for (int i = sameLineNumber - 1; i >= 0; i--)
+                    if (_index == 0)
+                        sameLineNumber = 1;
+                    else if (_index > 0 && MidiNotes[_index].StartTime == MidiNotes[_index - 1].StartTime)
                     {
-                        alongKeys[i] = PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_index - sameLineNumber + i + 1].Note);
+                        sameLineNumber++;
+
                     }
+                    else
+                        sameLineNumber = 1;
+                    if (_index < MidiNotes.Length - 1 && MidiNotes[_index].StartTime != MidiNotes[_index + 1].StartTime)
+                    {
+                        alongKeys = new int[sameLineNumber];
+                        for (int i = sameLineNumber - 1; i >= 0; i--)
+                        {
+                            alongKeys[i] = PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_index - sameLineNumber + i + 1].Note);
+                        }
+                    }
+                    else if (_index == MidiNotes.Length - 1)
+                    {
+                        alongKeys = new int[sameLineNumber];
+                        for (int i = sameLineNumber - 1; i >= 0; i--)
+                        {
+                            alongKeys[i] = PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_index - sameLineNumber + i + 1].Note);
+                        }
+                    }
+                    for (int j = 0; j < alongKeys.Length; j++)
+                        print(alongKeys.Length + "+" + alongKeys[j] + "+");
                 }
 
                 if(gamelevel == 1)
