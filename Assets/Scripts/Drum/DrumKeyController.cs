@@ -73,10 +73,22 @@ public class DrumKeyController : MonoBehaviour
 	public Dictionary<string, DrumKey> PianoNotes = new Dictionary<string, DrumKey>();
     public List<string> noteOrder = new List<string>();
 
+	public List<string> drumOrder = new List<string>();
+
     private readonly string[] _keyIndex = new string[12] { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
 
 	void Awake ()
 	{
+		drumOrder.Add("Closed Hi-Hat");
+        drumOrder.Add("Open Hi-Hat");
+        drumOrder.Add("Pedal Hi-Hat");
+        drumOrder.Add("Acoustic Snare");
+        drumOrder.Add("Crash Cymbal 2");
+        drumOrder.Add("High Floor Tom");
+        drumOrder.Add("High Mid Tom");
+        drumOrder.Add("Bass Drum 1");
+        drumOrder.Add("Ride Cymbal 1");
+        drumOrder.Add("Low Floor Tom");
 
         Time.timeScale = 1f;
         if (Sort)
