@@ -272,7 +272,8 @@ public class DrumMidiPlayer : MonoBehaviour
                     {
                         alongkeyspressed[i] = true;
 
-                        score += bonus; //!critical
+                        score++;
+                        //score += bonus; //!critical
                         continousFail = 0;
                         scoreTexts.text = ((int)(score * 1000f) / 1000f).ToString();
 
@@ -518,7 +519,7 @@ public class DrumMidiPlayer : MonoBehaviour
             switch (gamelevel)
             {
                 case 1:
-                case 3:
+                //case 3:
                     for(keynumber = 0; keynumber < 88 ; keynumber++) //on piano keyboard number 1~88 vs real midi notes 21~108
                     {
                         if(MidiMaster.GetKeyDown(getNoteNumber(keynumber)) || Input.GetKeyUp(KeyCode.E))
@@ -582,7 +583,7 @@ public class DrumMidiPlayer : MonoBehaviour
                         }
                     }
                     break;
-                //case 3:
+                case 3:
                 case 4:
                 case 5:
                 case 6:

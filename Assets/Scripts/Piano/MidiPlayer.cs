@@ -46,7 +46,7 @@ public class MidiPlayer : MonoBehaviour
     int[] fingerScore;
 	int _noteIndex = 0, leftHandSameIndex = 0, leftHandInterval = 1, leftHandOnceIndex = 0, leftHandOnceInterval = 1, rightHandSameIndex = 0, rightHandInterval = 1, rightHandOnceIndex = 0, rightHandOnceInterval = 1;
 	int sameLineNumber, continousFail = 0, midiNoteLength, scoreLength;
-	public static int _midiIndex, gamelevel = 2;
+	public static int _midiIndex, gamelevel = 1;
     public static int[] alongKeys;
     bool[] alongkeyspressed;
     public static float score = 0;
