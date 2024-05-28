@@ -46,14 +46,15 @@ public class DrumMidiPlayer : MonoBehaviour
     int[] fingerScore;
 	int _noteIndex = 0, leftHandSameIndex = 0, leftHandInterval = 1, leftHandOnceIndex = 0, leftHandOnceInterval = 1, rightHandSameIndex = 0, rightHandInterval = 1, rightHandOnceIndex = 0, rightHandOnceInterval = 1;
 	int sameLineNumber, continousFail = 0, midiNoteLength, scoreLength;
-	public static int _midiIndex, gamelevel = 1;
+	public static int _midiIndex, gamelevel = -1;
     public static int[] alongKeys;
     bool[] alongkeyspressed;
     public static float score = 0;
 	double _timer = 0, _sliderTimer = 0, currentTime = 0, startTime;
     float interval, imageInitY, bonus = 1f;
-	[SerializeField, HideInInspector]
-	bool _preset = false, playended = false;
+    [SerializeField, HideInInspector]
+    bool _preset = false;
+    public static bool playended = false;
 	Vector2 noteSize;
 
     GameObject[] u = new GameObject[88];
@@ -99,13 +100,13 @@ public class DrumMidiPlayer : MonoBehaviour
 		else
 		{
 #if UNITY_EDITOR
-			_path = string.Format("{0}/MIDI/{1}.mid", Application.streamingAssetsPath, MIDISongs[0].MIDIFile.name);
+			_path = string.Format("{0}/MIDI/Drum/{1}.mid", Application.streamingAssetsPath, MIDISongs[0].MIDIFile.name);
             txt_path = string.Format("{0}/Score/{1}.txt", Application.streamingAssetsPath, MIDISongs[0].MIDIFile.name);
 #else
-			_path = string.Format("{0}/MIDI/{1}.mid", Application.streamingAssetsPath, MIDISongs[0].SongFileName);
+			_path = string.Format("{0}/MIDI/Drum/{1}.mid", Application.streamingAssetsPath, MIDISongs[0].SongFileName);
             txt_path = string.Format("{0}/Score/{1}.txt", Application.streamingAssetsPath, MIDISongs[0].SongFileName);
 #endif
-			_midi = new MidiFileInspector(_path);
+            _midi = new MidiFileInspector(_path);
             _scoretxt = new TextAsset(txt_path);
 
             string[] AllWords = File.ReadAllLines(txt_path);
@@ -149,6 +150,9 @@ public class DrumMidiPlayer : MonoBehaviour
             //scoreTexts.gameObject.SetActive(true);
             switch (gamelevel)
             {
+                case -1:
+                    GetComponent<AudioSource>().enabled = false;
+                    break;
                 case 1:
                     GlobalSpeed = 1f;
                     playAlong = true;
@@ -236,7 +240,7 @@ public class DrumMidiPlayer : MonoBehaviour
     }
 	IEnumerator WaitAndHalt()
     {
-        yield return new WaitForSeconds(0.2f);
+        yield return new WaitForSeconds(0.25f);
         Time.timeScale = 0f;
     }
 
@@ -244,6 +248,7 @@ public class DrumMidiPlayer : MonoBehaviour
     {
         gamelevel = 1;
         Time.timeScale = 1f;
+        playended = false;
         SceneManager.LoadScene("Drum");
     }
 
@@ -251,6 +256,7 @@ public class DrumMidiPlayer : MonoBehaviour
     {
         gamelevel = 3;
         Time.timeScale = 1f;
+        playended = false;
         SceneManager.LoadScene("Drum");
     }
     int getNoteNumber(int keyNumber)
@@ -380,284 +386,294 @@ public class DrumMidiPlayer : MonoBehaviour
                 return 0;
         }
     }
+
     void Update ()
 	{
-		if (MIDISongs.Length <= 0)
-			enabled = false;
-        if (_midi != null && midiNoteLength > 0 && _noteIndex < midiNoteLength)
-        //if (_midi != null && MidiNotes.Length > 0 && _noteIndex < 20)
+		if(gamelevel >= 0 && !playended)
         {
-            _timer += Time.deltaTime * GlobalSpeed * MidiNotes[_noteIndex].Tempo;
-			currentTime += Time.deltaTime * GlobalSpeed;
-			currentTimeText.text = DisplayTotalTime((int)currentTime);
-            if (gamelevel == 1)
-                currentTimeText.text = DisplayTotalTime((int)(Time.realtimeSinceStartup - startTime));
+            if (MIDISongs.Length <= 0)
+                enabled = false;
+            if (_midi != null && midiNoteLength > 0 && _noteIndex < midiNoteLength)
+            //if (_midi != null && MidiNotes.Length > 0 && _noteIndex < 20)
+            {
+                _timer += Time.deltaTime * GlobalSpeed * MidiNotes[_noteIndex].Tempo;
+                currentTime += Time.deltaTime * GlobalSpeed;
+                currentTimeText.text = DisplayTotalTime((int)currentTime);
+                if (gamelevel == 1)
+                    currentTimeText.text = DisplayTotalTime((int)(Time.realtimeSinceStartup - startTime));
 
-            //Debug.LogError(MidiNotes[_noteIndex].Tempo);
-            while (_noteIndex < midiNoteLength && MidiNotes[_noteIndex].StartTime < _timer && !freeplay)
-			{
-                percentageProgress.text = ((int)((_timer - 800)*100 / MidiNotes[midiNoteLength - 1].StartTime)).ToString()+"%";
-
-                timeDisplay.GetComponent<Slider>().value = (float)((_timer-800) / MidiNotes[midiNoteLength - 1].StartTime);
-                //if (PianoKeyDetector.PianoNotes.ContainsKey(MidiNotes[_noteIndex].Note) && DetectIfDrumNote(MidiNotes[_noteIndex].Note))
-                bool isDrum = false;
-                if (DetectIfDrumNote(MidiNotes[_noteIndex].Note))
+                //Debug.LogError(MidiNotes[_noteIndex].Tempo);
+                while (_noteIndex < midiNoteLength && MidiNotes[_noteIndex].StartTime < _timer && !freeplay)
                 {
-                    isDrum = true;
-                    GameObject g = Instantiate(noteImage, GameObject.Find("DrumNotes").transform) as GameObject;
-                    //if (MidiNotes[0].Length <= 0.1f)
-                    //int index = PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex].Note);
-                    g.transform.localPosition = new Vector3(7.5f + OrderOfDrumNote(MidiNotes[_noteIndex].Note) * 3.4f, 98f, 0f); // disc size 3f, interval 0.4f, left margin 7.5f
-                    //else
-                    //    g.GetComponent<RectTransform>().localPosition = new Vector2(-950f + (CalcImageIndex(MidiNotes[_noteIndex].Note) - 1) * noteSize.x / 36f * 37.2f, 1080f + (float)MidiNotes[_noteIndex].StartTime / interval * noteSize.y * (int)(MidiNotes[0].Length * 100f) / 10f * 1.1f);
-                    //if (MidiNotes[_noteIndex].Note.Length == 3) //#notes
-                    {
-                        //Vector2 sizeDelta = g.GetComponent<RectTransform>().sizeDelta;
-                        //g.GetComponent<RectTransform>().sizeDelta = new Vector2(sizeDelta.x / 2f, sizeDelta.y);
-                        //g.transform.localPosition = new Vector3(g.transform.localPosition.x + noteSize.x / 36f * 18.6f, g.transform.localPosition.y, 0f);
-                    }
-                    //if (MidiNotes[_noteIndex].Length > 0.1f) // in origin Rosetta, fixing image lengths according to its length
-                    {
-                        //Vector2 sizeDelta = g.GetComponent<RectTransform>().sizeDelta;
-                        //g.GetComponent<RectTransform>().sizeDelta = new Vector2(sizeDelta.x, (int)(MidiNotes[_noteIndex].Length * sizeDelta.y * 100f) / 10f);
-                    }
-                    //disc coloring
-                    //index++;
-                    switch(MidiNotes[_noteIndex].Note)
-                    {
-                        case "Closed Hi-Hat":
-                            g.GetComponent<SpriteRenderer>().color = _42Color;
-                            break;
-                        case "Open Hi-Hat":
-                            g.GetComponent<SpriteRenderer>().color = _46Color;
-                            break;
-                        case "Pedal Hi-Hat":
-                            g.GetComponent<SpriteRenderer>().color = _44Color;
-                            break;
-                        case "Acoustic Snare":
-                            g.GetComponent<SpriteRenderer>().color = _38Color;
-                            break;
-                        case "Crash Cymbal 2":
-                            g.GetComponent<SpriteRenderer>().color = _49Color;
-                            break;
-                        case "High Floor Tom":
-                            g.GetComponent<SpriteRenderer>().color = _48Color;
-                            break;
-                        case "High Mid Tom":
-                            g.GetComponent<SpriteRenderer>().color = _45Color;
-                            break;
-                        case "Bass Drum 1":
-                            g.GetComponent<SpriteRenderer>().color = _36Color;
-                            break;
-                        case "Ride Cymbal 1":
-                            g.GetComponent<SpriteRenderer>().color = _51Color;
-                            break;
-                        case "Low Floor Tom":
-                            g.GetComponent<SpriteRenderer>().color = _43Color;
-                            break;
-                    }
+                    percentageProgress.text = ((int)((_timer - 800) * 100 / MidiNotes[midiNoteLength - 1].StartTime)).ToString() + "%";
 
-                    //basic coloring
-         
-                    g.name = MidiNotes[_noteIndex].Channel + "+" + leftHandOnceInterval + "+" + MidiNotes[_noteIndex].StartTime + "+" + MidiNotes[_noteIndex].Note + "+" + (PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex].Note)+1).ToString(); // the last number is the 88 midi keyboard's order from left
-					
-					//StartCoroutine(WaitAndPlay(1.4f, _noteIndex));
-
-				}
-                StartCoroutine(WaitAndPlay(1.6f, _noteIndex, isDrum));
-
-                _noteIndex++;
-				
-			}
-            GameObject[] gs = GameObject.FindGameObjectsWithTag("Flow");
-            foreach (GameObject gsu in gs)
-            {
-                if (gsu.transform.localPosition.y < 0f)
-                    Destroy(gsu);
-            }
-        }
-		else
-		{
-            
-			SetupNextMIDI();
-		}
-		if (Input.GetKeyUp(KeyCode.N))
-			SetupNextMIDI();
-		else if (Input.GetKeyUp(KeyCode.DownArrow))
-		{
-			if(GlobalSpeed > 0.1f)
-				GlobalSpeed -= 0.1f;
-			NoteFlow.flowSpeed = NoteFlow.originSpeed * GlobalSpeed;
-			DisplaySpeed();
-        }
-		else if (Input.GetKeyUp(KeyCode.UpArrow))
-		{
-            GlobalSpeed += 0.1f;
-            NoteFlow.flowSpeed = NoteFlow.originSpeed * GlobalSpeed;
-            DisplaySpeed();
-        }
-        else if (Input.GetKeyUp(KeyCode.Space))
-        {
-			if (Time.timeScale > 0)
-				Time.timeScale = 0f;
-			else
-				Time.timeScale = 1f;
-            DisplaySpeed();
-        }
-        //else if (Input.GetKeyUp(KeyCode.A))
-        //{
-        //    pass = true;
-        //}
-        else if (Input.GetKeyUp(KeyCode.Escape))
-        {
-            OpenMainMenu();
-        }
-
-        if (alongKeys != null && !pass && alongkeyspressed != null)
-        {
-            int keynumber;
-            switch (gamelevel)
-            {
-                case 1:
-                //case 3:
-                    for(keynumber = 0; keynumber < 88 ; keynumber++) //on piano keyboard number 1~88 vs real midi notes 21~108
+                    timeDisplay.GetComponent<Slider>().value = (float)((_timer - 800) / MidiNotes[midiNoteLength - 1].StartTime);
+                    if (gamelevel == 1)
+                        timeDisplay.GetComponent<Slider>().value = (float)(currentTime / 230);
+                    //if (PianoKeyDetector.PianoNotes.ContainsKey(MidiNotes[_noteIndex].Note) && DetectIfDrumNote(MidiNotes[_noteIndex].Note))
+                    bool isDrum = false;
+                    if (DetectIfDrumNote(MidiNotes[_noteIndex].Note))
                     {
-                        if(MidiMaster.GetKeyDown(getNoteNumber(keynumber)) || Input.GetKeyUp(KeyCode.E))
+                        isDrum = true;
+                        GameObject g = Instantiate(noteImage, GameObject.Find("DrumNotes").transform) as GameObject;
+                        //if (MidiNotes[0].Length <= 0.1f)
+                        //int index = PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex].Note);
+                        g.transform.localPosition = new Vector3(7.5f + OrderOfDrumNote(MidiNotes[_noteIndex].Note) * 3.4f, 98f, 0f); // disc size 3f, interval 0.4f, left margin 7.5f
+                                                                                                                                     //else
+                                                                                                                                     //    g.GetComponent<RectTransform>().localPosition = new Vector2(-950f + (CalcImageIndex(MidiNotes[_noteIndex].Note) - 1) * noteSize.x / 36f * 37.2f, 1080f + (float)MidiNotes[_noteIndex].StartTime / interval * noteSize.y * (int)(MidiNotes[0].Length * 100f) / 10f * 1.1f);
+                                                                                                                                     //if (MidiNotes[_noteIndex].Note.Length == 3) //#notes
                         {
-                            int r = 0;
-                            for(int i = alongKeys.Length - 1; i >= 0; i--)
+                            //Vector2 sizeDelta = g.GetComponent<RectTransform>().sizeDelta;
+                            //g.GetComponent<RectTransform>().sizeDelta = new Vector2(sizeDelta.x / 2f, sizeDelta.y);
+                            //g.transform.localPosition = new Vector3(g.transform.localPosition.x + noteSize.x / 36f * 18.6f, g.transform.localPosition.y, 0f);
+                        }
+                        //if (MidiNotes[_noteIndex].Length > 0.1f) // in origin Rosetta, fixing image lengths according to its length
+                        {
+                            //Vector2 sizeDelta = g.GetComponent<RectTransform>().sizeDelta;
+                            //g.GetComponent<RectTransform>().sizeDelta = new Vector2(sizeDelta.x, (int)(MidiNotes[_noteIndex].Length * sizeDelta.y * 100f) / 10f);
+                        }
+                        //disc coloring
+                        //index++;
+                        switch (MidiNotes[_noteIndex].Note)
+                        {
+                            case "Closed Hi-Hat":
+                                g.GetComponent<SpriteRenderer>().color = _42Color;
+                                break;
+                            case "Open Hi-Hat":
+                                g.GetComponent<SpriteRenderer>().color = _46Color;
+                                break;
+                            case "Pedal Hi-Hat":
+                                g.GetComponent<SpriteRenderer>().color = _44Color;
+                                break;
+                            case "Acoustic Snare":
+                                g.GetComponent<SpriteRenderer>().color = _38Color;
+                                break;
+                            case "Crash Cymbal 2":
+                                g.GetComponent<SpriteRenderer>().color = _49Color;
+                                break;
+                            case "High Floor Tom":
+                                g.GetComponent<SpriteRenderer>().color = _48Color;
+                                break;
+                            case "High Mid Tom":
+                                g.GetComponent<SpriteRenderer>().color = _45Color;
+                                break;
+                            case "Bass Drum 1":
+                                g.GetComponent<SpriteRenderer>().color = _36Color;
+                                break;
+                            case "Ride Cymbal 1":
+                                g.GetComponent<SpriteRenderer>().color = _51Color;
+                                break;
+                            case "Low Floor Tom":
+                                g.GetComponent<SpriteRenderer>().color = _43Color;
+                                break;
+                        }
+
+                        //basic coloring
+
+                        g.name = MidiNotes[_noteIndex].Channel + "+" + leftHandOnceInterval + "+" + MidiNotes[_noteIndex].StartTime + "+" + MidiNotes[_noteIndex].Note + "+" + (PianoKeyDetector.noteOrder.IndexOf(MidiNotes[_noteIndex].Note) + 1).ToString(); // the last number is the 88 midi keyboard's order from left
+
+                        //StartCoroutine(WaitAndPlay(1.4f, _noteIndex));
+
+                    }
+                    StartCoroutine(WaitAndPlay(1.6f, _noteIndex, isDrum));
+
+                    _noteIndex++;
+
+                }
+                GameObject[] gs = GameObject.FindGameObjectsWithTag("Flow");
+                foreach (GameObject gsu in gs)
+                {
+                    if (gsu.transform.localPosition.y < 0f)
+                        Destroy(gsu);
+                }
+            }
+            else
+            {
+
+                SetupNextMIDI();
+            }
+            if (Input.GetKeyUp(KeyCode.N))
+                SetupNextMIDI();
+            else if (Input.GetKeyUp(KeyCode.DownArrow))
+            {
+                if (GlobalSpeed > 0.1f)
+                    GlobalSpeed -= 0.1f;
+                NoteFlow.flowSpeed = NoteFlow.originSpeed * GlobalSpeed;
+                DisplaySpeed();
+            }
+            else if (Input.GetKeyUp(KeyCode.UpArrow))
+            {
+                GlobalSpeed += 0.1f;
+                NoteFlow.flowSpeed = NoteFlow.originSpeed * GlobalSpeed;
+                DisplaySpeed();
+            }
+            else if (Input.GetKeyUp(KeyCode.Space))
+            {
+                if (Time.timeScale > 0)
+                    Time.timeScale = 0f;
+                else
+                    Time.timeScale = 1f;
+                DisplaySpeed();
+            }
+            //else if (Input.GetKeyUp(KeyCode.A))
+            //{
+            //    pass = true;
+            //}
+            else if (Input.GetKeyUp(KeyCode.Escape))
+            {
+                OpenMainMenu();
+            }
+
+            if (alongKeys != null && !pass && alongkeyspressed != null)
+            {
+                int keynumber;
+                switch (gamelevel)
+                {
+                    case 1:
+                        //case 3:
+                        for (keynumber = 0; keynumber < 88; keynumber++) //on piano keyboard number 1~88 vs real midi notes 21~108
+                        {
+                            if (MidiMaster.GetKeyDown(getNoteNumber(keynumber)) || Input.GetKeyUp(KeyCode.E))
                             {
-                                //Here examine with the drum keys
-                                if (alongKeys[i] == getNoteNumber(keynumber) && !alongkeyspressed[i])
+                                int r = 0;
+                                for (int i = alongKeys.Length - 1; i >= 0; i--)
                                 {
-                                    alongkeyspressed[i] = true;
-                                    score++;
-                                    scoreDisplay.GetComponent<Slider>().value = (float)(score / midiNoteLength);
-                                    scoreTexts.text = score.ToString();
-                                    r++;
-                                }                                   
+                                    //Here examine with the drum keys
+                                    if (alongKeys[i] == getNoteNumber(keynumber) && !alongkeyspressed[i])
+                                    {
+                                        alongkeyspressed[i] = true;
+                                        score++;
+                                        scoreDisplay.GetComponent<Slider>().value = (float)(score / midiNoteLength);
+                                        scoreTexts.text = score.ToString();
+                                        r++;
+                                    }
+                                }
+                                if (r == 0)
+                                    errorplayer.Play();
                             }
-                            if(r == 0)
-                                errorplayer.Play();
                         }
-                    }
-                    int t;
-                    for (t = sameLineNumber - 1; t >= 0 && alongkeyspressed[t]; t--)
-                    {
-                    }
-                    if (t == -1)
-                        pass = true;
-                    if (playended)
-                    {
-                        //if (score == MidiNotes.Length)
-                        //if (score == 20)
+                        int t;
+                        for (t = sameLineNumber - 1; t >= 0 && alongkeyspressed[t]; t--)
                         {
-                            levelpass.SetActive(true);
-                            levelendbar.SetActive(true);
-                            StartCoroutine(DelayedOpenMenu());
-                            Time.timeScale = 1f;
                         }
-                        //else
-                        //{
-                        //    Time.timeScale = 1f;
-                        //    levelfail.SetActive(true);
-                        //    levelendbar.SetActive(true);
-                        //    StartCoroutine(DelayedOpenMenu());
-                        //}
-                    }
-                    break;
-                case 2:
-                    ScoreMechanics();
-                    if (playended)
-                    {
-                        if (score >= MidiNotes.Length * 0.8f)
+                        if (t == -1)
+                            pass = true;
+                        if (playended)
                         {
-                            levelpass.SetActive(true);
-                            levelendbar.SetActive(true);
-                            StartCoroutine(DelayedOpenMenu());
+                            //if (score == MidiNotes.Length)
+                            //if (score == 20)
+                            {
+                                levelpass.SetActive(true);
+                                percentageProgress.fontSize = 72;
+                                levelendbar.SetActive(true);
+                                StartCoroutine(DelayedOpenMenu());
+                                Time.timeScale = 1f;
+                            }
+                            //else
+                            //{
+                            //    Time.timeScale = 1f;
+                            //    levelfail.SetActive(true);
+                            //    levelendbar.SetActive(true);
+                            //    StartCoroutine(DelayedOpenMenu());
+                            //}
                         }
-                        else
+                        break;
+                    case 2:
+                        ScoreMechanics();
+                        if (playended)
                         {
-                            Time.timeScale = 1f;
-                            StartCoroutine(DelayShowResult());
+                            if (score >= MidiNotes.Length * 0.8f)
+                            {
+                                levelpass.SetActive(true);
+                                levelendbar.SetActive(true);
+                                percentageProgress.fontSize = 72;
+                                StartCoroutine(DelayedOpenMenu());
+                            }
+                            else
+                            {
+                                Time.timeScale = 1f;
+                                StartCoroutine(DelayShowResult());
+                            }
                         }
-                    }
-                    break;
-                case 3:
-                case 4:
-                case 5:
-                case 6:
-                    ScoreMechanics();
-                    if (playended)
-                    {
-                        if (score >= MidiNotes.Length)
+                        break;
+                    case 3:
+                    case 4:
+                    case 5:
+                    case 6:
+                        ScoreMechanics();
+                        if (playended)
                         {
-                            levelpass.SetActive(true);
-                            levelendbar.SetActive(true);
-                            StartCoroutine(DelayedOpenMenu());
+                            if (score >= MidiNotes.Length)
+                            {
+                                levelpass.SetActive(true);
+                                levelendbar.SetActive(true);
+                                percentageProgress.fontSize = 72;
+                                StartCoroutine(DelayedOpenMenu());
+                            }
+                            else
+                            {
+                                Time.timeScale = 1f;
+                                StartCoroutine(DelayShowResult());
+                            }
                         }
-                        else
-                        {
-                            Time.timeScale = 1f;
-                            StartCoroutine(DelayShowResult());
-                        }
-                    }
-                    break;
+                        break;
+                }
             }
-        }
 
 
-        if (pass)
-		{
-			Time.timeScale = 1f;
-			pass = false;
-		}
-        
-        if (freeplay) // not used in the drum mode
-        {
-            int keynumber;
-            for (keynumber = 0; keynumber < 88; keynumber++)
+            if (pass)
             {
-                int tempnumber = keynumber;
-                //tempnumber = 12;
-                if (!pressed[tempnumber] && (MidiMaster.GetKeyDown(getNoteNumber(keynumber)) || Input.GetKeyDown(KeyCode.E)))
+                Time.timeScale = 1f;
+                pass = false;
+            }
+
+            if (freeplay) // not used in the drum mode
+            {
+                int keynumber;
+                for (keynumber = 0; keynumber < 88; keynumber++)
                 {
-                    u[tempnumber] = Instantiate(noteUpImage, GameObject.Find("Canvas").transform) as GameObject;
-                    u[tempnumber].transform.localPosition = new Vector3((CalcImageIndex(PianoKeyDetector.noteOrder[tempnumber].ToString()) - 1) * noteSize.x / 36f * 37.2f, -30f, 0f);
-                    if(Menu.hideKeyboard)
-                        u[tempnumber].transform.localPosition = new Vector3((CalcImageIndex(PianoKeyDetector.noteOrder[tempnumber].ToString()) - 1) * noteSize.x / 36f * 37.2f, -54f, 0f);
-                    if (PianoKeyDetector.noteOrder[tempnumber].Length == 3)
+                    int tempnumber = keynumber;
+                    //tempnumber = 12;
+                    if (!pressed[tempnumber] && (MidiMaster.GetKeyDown(getNoteNumber(keynumber)) || Input.GetKeyDown(KeyCode.E)))
+                    {
+                        u[tempnumber] = Instantiate(noteUpImage, GameObject.Find("Canvas").transform) as GameObject;
+                        u[tempnumber].transform.localPosition = new Vector3((CalcImageIndex(PianoKeyDetector.noteOrder[tempnumber].ToString()) - 1) * noteSize.x / 36f * 37.2f, -30f, 0f);
+                        if (Menu.hideKeyboard)
+                            u[tempnumber].transform.localPosition = new Vector3((CalcImageIndex(PianoKeyDetector.noteOrder[tempnumber].ToString()) - 1) * noteSize.x / 36f * 37.2f, -54f, 0f);
+                        if (PianoKeyDetector.noteOrder[tempnumber].Length == 3)
+                        {
+                            //Vector2 sizeDelta = u[tempnumber].GetComponent<RectTransform>().sizeDelta;
+                            //u[tempnumber].GetComponent<RectTransform>().sizeDelta = new Vector2(sizeDelta.x / 2f, sizeDelta.y);
+                            u[tempnumber].transform.localPosition = new Vector3(u[tempnumber].transform.localPosition.x + noteSize.x / 36f * 18.6f, u[tempnumber].transform.localPosition.y);
+                        }
+                        initTime[tempnumber] = Time.time;
+                        pressed[tempnumber] = true;
+
+                        PianoKeyDetector.PianoNotes[PianoKeyDetector.noteOrder[tempnumber]].Play(10f, 1f, GlobalSpeed);
+                    }
+                    if (pressed[tempnumber] && Time.time - initTime[tempnumber] > 0.1f)
                     {
                         //Vector2 sizeDelta = u[tempnumber].GetComponent<RectTransform>().sizeDelta;
-                        //u[tempnumber].GetComponent<RectTransform>().sizeDelta = new Vector2(sizeDelta.x / 2f, sizeDelta.y);
-                        u[tempnumber].transform.localPosition = new Vector3(u[tempnumber].transform.localPosition.x + noteSize.x / 36f * 18.6f, u[tempnumber].transform.localPosition.y);
+                        //u[tempnumber].GetComponent<RectTransform>().sizeDelta = new Vector2(sizeDelta.x, (int)((Time.time - initTime[tempnumber]) * 60f * 100f) / 10f);
                     }
-                    initTime[tempnumber] = Time.time;
-                    pressed[tempnumber] = true;
-
-                    PianoKeyDetector.PianoNotes[PianoKeyDetector.noteOrder[tempnumber]].Play(10f, 1f, GlobalSpeed);
+                    if (MidiMaster.GetKeyUp(getNoteNumber(keynumber)) || Input.GetKeyUp(KeyCode.E))
+                        pressed[tempnumber] = false;
                 }
-                if (pressed[tempnumber] && Time.time - initTime[tempnumber] > 0.1f)
-                {
-                    //Vector2 sizeDelta = u[tempnumber].GetComponent<RectTransform>().sizeDelta;
-                    //u[tempnumber].GetComponent<RectTransform>().sizeDelta = new Vector2(sizeDelta.x, (int)((Time.time - initTime[tempnumber]) * 60f * 100f) / 10f);
-                }
-                if(MidiMaster.GetKeyUp(getNoteNumber(keynumber)) || Input.GetKeyUp(KeyCode.E))
-                    pressed[tempnumber] = false;
             }
-        }
 
-        GameObject[] us = GameObject.FindGameObjectsWithTag("Flow");
-        foreach(GameObject usu in us)
-        {
-            if (usu.transform.localPosition.y > 200f)
-                Destroy(usu);
+            GameObject[] us = GameObject.FindGameObjectsWithTag("Flow");
+            foreach (GameObject usu in us)
+            {
+                if (usu.transform.localPosition.y > 200f)
+                    Destroy(usu);
+            }
         }
 	}
     IEnumerator DelayShowResult()
     {
         yield return new WaitForSeconds(1f);
         levelfail.SetActive(true);
+        percentageProgress.fontSize = 72;
         levelendbar.SetActive(true);
         StartCoroutine(DelayedOpenMenu());
     }
@@ -665,6 +681,7 @@ public class DrumMidiPlayer : MonoBehaviour
     {
         yield return new WaitForSeconds(6.5f);
         SceneManager.LoadScene("Drum");
+        playended = false;
     }
 	IEnumerator WaitAndPlay(float t, int _index, bool isDrum)
 	{
@@ -893,10 +910,10 @@ public class DrumMidiPlayer : MonoBehaviour
 		_timer = 0;
 
 #if UNITY_EDITOR
-		_path = string.Format("{0}/MIDI/{1}.mid", Application.streamingAssetsPath, MIDISongs[_midiIndex].MIDIFile.name);
+		_path = string.Format("{0}/MIDI/Drum/{1}.mid", Application.streamingAssetsPath, MIDISongs[_midiIndex].MIDIFile.name);
         txt_path = string.Format("{0}/Score/{1}.txt", Application.streamingAssetsPath, MIDISongs[_midiIndex].MIDIFile.name);
 #else
-		_path = string.Format("{0}/MIDI/{1}.mid", Application.streamingAssetsPath, MIDISongs[_midiIndex].SongFileName);
+		_path = string.Format("{0}/MIDI/Drum/{1}.mid", Application.streamingAssetsPath, MIDISongs[_midiIndex].SongFileName);
         txt_path = string.Format("{0}/Score/{1}.txt", Application.streamingAssetsPath, MIDISongs[_midiIndex].SongFileName);
 #endif
         _midi = new MidiFileInspector(_path);
@@ -931,10 +948,10 @@ public class DrumMidiPlayer : MonoBehaviour
 	void PresetFirstMIDI()
 	{
 #if UNITY_EDITOR
-		_path = string.Format("{0}/MIDI/{1}.mid", Application.streamingAssetsPath, MIDISongs[0].MIDIFile.name);
+		_path = string.Format("{0}/MIDI/Drum/{1}.mid", Application.streamingAssetsPath, MIDISongs[0].MIDIFile.name);
         txt_path = string.Format("{0}/Score/{1}.txt", Application.streamingAssetsPath, MIDISongs[0].MIDIFile.name);
 #else
-		_path = string.Format("{0}/MIDI/{1}.mid", Application.streamingAssetsPath, MIDISongs[0].SongFileName);
+		_path = string.Format("{0}/MIDI/Drum/{1}.mid", Application.streamingAssetsPath, MIDISongs[0].SongFileName);
         txt_path = string.Format("{0}/Score/{1}.txt", Application.streamingAssetsPath, MIDISongs[0].SongFileName);
 #endif
         _midi = new MidiFileInspector(_path);

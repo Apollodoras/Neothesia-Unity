@@ -16,9 +16,12 @@ public class DiscFlow : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if(!MidiPlayer.freeplay)
-            transform.localPosition = new Vector2(transform.localPosition.x, transform.localPosition.y - Time.deltaTime * flowSpeed);
-        else
-            transform.localPosition = new Vector2(transform.localPosition.x, transform.localPosition.y + Time.deltaTime * flowSpeed);
+        if(!DrumMidiPlayer.playended)
+        {
+            if (!MidiPlayer.freeplay)
+                transform.localPosition = new Vector2(transform.localPosition.x, transform.localPosition.y - Time.deltaTime * flowSpeed);
+            else
+                transform.localPosition = new Vector2(transform.localPosition.x, transform.localPosition.y + Time.deltaTime * flowSpeed);
+        }
     }
 }
