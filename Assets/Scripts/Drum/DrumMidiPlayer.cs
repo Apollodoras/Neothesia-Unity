@@ -118,7 +118,8 @@ public class DrumMidiPlayer : MonoBehaviour
 
             OnPlayTrack.Invoke();
 		}
-        GetComponent<AudioSource>().clip = playmp3clip;
+        if(playmp3clip != null)
+            GetComponent<AudioSource>().clip = playmp3clip;
         GetComponent<AudioSource>().Play();
         scoreDisplay.SetActive(false);
         if(freeplay)
@@ -238,7 +239,7 @@ public class DrumMidiPlayer : MonoBehaviour
         playended = false;
         //Debug.LogError(drumsonglist.GetComponent<RectTransform>().localPosition.y);
         _midiIndex = (int)(drumsonglist.GetComponent<RectTransform>().localPosition.y / 135f);
-        print(_midiIndex);
+        SceneManager.LoadScene("Drum");
         SceneManager.LoadScene("Drum");
     }
 
@@ -247,6 +248,7 @@ public class DrumMidiPlayer : MonoBehaviour
         gamelevel = 3;
         Time.timeScale = 1f;
         playended = false;
+        _midiIndex = (int)(drumsonglist.GetComponent<RectTransform>().localPosition.y / 135f);
         SceneManager.LoadScene("Drum");
     }
     int getNoteNumber(int keyNumber)
