@@ -17,10 +17,10 @@ public class DrumMidiPlayer : MonoBehaviour
 {
 	[Header("References")]
 	public DrumKeyController PianoKeyDetector;
-    public static bool playAlong, pass, freeplay;
-	public GameObject noteImage, noteUpImage, speedDisplay, timeDisplay, scoreDisplay, timeTexts, noteTexts, levelpass, levelfail, levelendbar, bonusText;
+    public static bool playAlong, pass, freeplay = false;
+	public GameObject noteImage, noteUpImage, speedDisplay, timeDisplay, scoreDisplay, timeTexts, noteTexts, levelpass, levelfail, levelendbar, bonusText, drumsonglist, drumsongbuttonprefab;
     public AudioSource errorplayer;
-    public AudioClip errorplayerClip;
+    public AudioClip errorplayerClip, playmp3clip;
 
 	[Header("Properties")]
 	public float GlobalSpeed = 1;
@@ -94,45 +94,32 @@ public class DrumMidiPlayer : MonoBehaviour
 		OnPlayTrack.AddListener(delegate{FindObjectOfType<MusicText>().StartSequence(MIDISongs[_midiIndex].Details);});
 
         //_midiIndex = 0;
-
+        drumsonglist.GetComponent<RectTransform>().localPosition = new Vector2(drumsonglist.GetComponent<RectTransform>().localPosition.x, 270f * _midiIndex);
         if (!_preset)
 			PlayCurrentMIDI();
 		else
 		{
 #if UNITY_EDITOR
 			_path = string.Format("{0}/MIDI/Drum/{1}.mid", Application.streamingAssetsPath, MIDISongs[0].MIDIFile.name);
-            txt_path = string.Format("{0}/Score/{1}.txt", Application.streamingAssetsPath, MIDISongs[0].MIDIFile.name);
+            txt_path = string.Format("{0}/MIDI/Drum/SongNames.txt", Application.streamingAssetsPath);
 #else
 			_path = string.Format("{0}/MIDI/Drum/{1}.mid", Application.streamingAssetsPath, MIDISongs[0].SongFileName);
-            txt_path = string.Format("{0}/Score/{1}.txt", Application.streamingAssetsPath, MIDISongs[0].SongFileName);
+            txt_path = string.Format("{0}/MIDI/Drum/SongNames.txt", Application.streamingAssetsPath);
 #endif
             _midi = new MidiFileInspector(_path);
+            MidiNotes = _midi.GetNotes();
+            _noteIndex = 0;
+
             _scoretxt = new TextAsset(txt_path);
 
             string[] AllWords = File.ReadAllLines(txt_path);
-            string[] fingers = AllWords[2].Split(" ");
-            int l;
-            if (MidiNotes.Length > fingers.Length)
-                l = fingers.Length;
-            else
-                l = MidiNotes.Length;
-            fingerScore = new int[l];
-            Debug.LogError(l);
-            try
-            {
-                for (int i = 0; i < l; i++)
-                {
-                    fingerScore[i] = int.Parse(fingers[i]);
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError(ex.Message);
-            }
+            
+            Debug.LogError(AllWords);
 
             OnPlayTrack.Invoke();
 		}
-
+        GetComponent<AudioSource>().clip = playmp3clip;
+        GetComponent<AudioSource>().Play();
         scoreDisplay.SetActive(false);
         if(freeplay)
         {
@@ -249,6 +236,9 @@ public class DrumMidiPlayer : MonoBehaviour
         gamelevel = 1;
         Time.timeScale = 1f;
         playended = false;
+        //Debug.LogError(drumsonglist.GetComponent<RectTransform>().localPosition.y);
+        _midiIndex = (int)(drumsonglist.GetComponent<RectTransform>().localPosition.y / 135f);
+        print(_midiIndex);
         SceneManager.LoadScene("Drum");
     }
 
@@ -400,16 +390,21 @@ public class DrumMidiPlayer : MonoBehaviour
                 currentTime += Time.deltaTime * GlobalSpeed;
                 currentTimeText.text = DisplayTotalTime((int)currentTime);
                 if (gamelevel == 1)
+                {
                     currentTimeText.text = DisplayTotalTime((int)(Time.realtimeSinceStartup - startTime));
+                    timeDisplay.GetComponent<Slider>().value = (float)((Time.realtimeSinceStartup - startTime) / CalcTotalTime());
+                }
+                    
 
                 //Debug.LogError(MidiNotes[_noteIndex].Tempo);
                 while (_noteIndex < midiNoteLength && MidiNotes[_noteIndex].StartTime < _timer && !freeplay)
                 {
-                    percentageProgress.text = ((int)((_timer - 800) * 100 / MidiNotes[midiNoteLength - 1].StartTime)).ToString() + "%";
+                    if(!levelfail.active)
+                        percentageProgress.text = ((int)((_timer - 800) * 100 / MidiNotes[midiNoteLength - 1].StartTime)).ToString() + "%";
 
-                    timeDisplay.GetComponent<Slider>().value = (float)((_timer - 800) / MidiNotes[midiNoteLength - 1].StartTime);
-                    if (gamelevel == 1)
-                        timeDisplay.GetComponent<Slider>().value = (float)(currentTime / 230);
+                    if(gamelevel != 1)
+                        timeDisplay.GetComponent<Slider>().value = (float)((_timer - 800) / MidiNotes[midiNoteLength - 1].StartTime);
+                       
                     //if (PianoKeyDetector.PianoNotes.ContainsKey(MidiNotes[_noteIndex].Note) && DetectIfDrumNote(MidiNotes[_noteIndex].Note))
                     bool isDrum = false;
                     if (DetectIfDrumNote(MidiNotes[_noteIndex].Note))
@@ -476,7 +471,7 @@ public class DrumMidiPlayer : MonoBehaviour
 
                     }
                     StartCoroutine(WaitAndPlay(1.6f, _noteIndex, isDrum));
-
+                    
                     _noteIndex++;
 
                 }
@@ -485,6 +480,16 @@ public class DrumMidiPlayer : MonoBehaviour
                 {
                     if (gsu.transform.localPosition.y < 0f)
                         Destroy(gsu);
+                }
+                if (timeDisplay.GetComponent<Slider>().value >= 0.998f)
+                {
+                    //playended = true;
+                    Time.timeScale = 1f;
+                    levelfail.SetActive(true);
+                    percentageProgress.fontSize = 72;
+                    levelendbar.SetActive(true);
+                    StartCoroutine(DelayedOpenMenu());
+                    print("Finished");
                 }
             }
             else
@@ -558,7 +563,7 @@ public class DrumMidiPlayer : MonoBehaviour
                         }
                         if (t == -1)
                             pass = true;
-                        if (playended)
+                        if (playended && int.Parse(percentageProgress.text) >= 99)
                         {
                             //if (score == MidiNotes.Length)
                             //if (score == 20)
@@ -682,6 +687,7 @@ public class DrumMidiPlayer : MonoBehaviour
         yield return new WaitForSeconds(6.5f);
         SceneManager.LoadScene("Drum");
         playended = false;
+        gamelevel = -1;
     }
 	IEnumerator WaitAndPlay(float t, int _index, bool isDrum)
 	{
@@ -744,7 +750,7 @@ public class DrumMidiPlayer : MonoBehaviour
                 //    print(alongkeys.length + "+" + alongkeys[j] + "+");
             }
 
-            if (!freeplay)
+            //if (!freeplay)
             {
                 if (_index == MidiNotes.Length - 1)
                 //if(_index == 10)
@@ -910,39 +916,34 @@ public class DrumMidiPlayer : MonoBehaviour
 		_timer = 0;
 
 #if UNITY_EDITOR
-		_path = string.Format("{0}/MIDI/Drum/{1}.mid", Application.streamingAssetsPath, MIDISongs[_midiIndex].MIDIFile.name);
-        txt_path = string.Format("{0}/Score/{1}.txt", Application.streamingAssetsPath, MIDISongs[_midiIndex].MIDIFile.name);
+        txt_path = string.Format("{0}/MIDI/Drum/SongNames.txt", Application.streamingAssetsPath);
 #else
-		_path = string.Format("{0}/MIDI/Drum/{1}.mid", Application.streamingAssetsPath, MIDISongs[_midiIndex].SongFileName);
-        txt_path = string.Format("{0}/Score/{1}.txt", Application.streamingAssetsPath, MIDISongs[_midiIndex].SongFileName);
+            txt_path = string.Format("{0}/MIDI/Drum/SongNames.txt", Application.streamingAssetsPath);
+#endif
+        _scoretxt = new TextAsset(txt_path);
+
+        string[] AllWords = File.ReadAllLines(txt_path);
+
+        for (int i = 0; i < AllWords.Length; i ++)
+        {
+            GameObject songbutton = Instantiate(drumsongbuttonprefab, drumsonglist.transform) as GameObject;
+            songbutton.name = (i+1).ToString();
+            songbutton.transform.GetChild(2).GetChild(2).GetChild(0).GetComponent<TMP_Text>().text = AllWords[i];
+            songbutton.transform.GetChild(2).GetChild(2).GetChild(1).GetComponent<TMP_Text>().text = "DRUM SONG";
+            songbutton.transform.GetChild(2).GetChild(5).gameObject.SetActive(false);
+        }
+
+#if UNITY_EDITOR
+        _path = string.Format("{0}/MIDI/Drum/{1}.mid", Application.streamingAssetsPath, AllWords[_midiIndex]);
+        playmp3clip = Resources.Load(AllWords[_midiIndex]) as AudioClip;
+#else
+		_path = string.Format("{0}/MIDI/Drum/{1}.mid", Application.streamingAssetsPath, AllWords[_midiIndex]);
 #endif
         _midi = new MidiFileInspector(_path);
         MidiNotes = _midi.GetNotes();
         _noteIndex = 0;
-
-        string[] AllWords = File.ReadAllLines(txt_path);
-        string[] fingers = AllWords[2].Split(" ");
-        int l;
-        if (MidiNotes.Length > fingers.Length)
-            l = fingers.Length;
-        else
-            l = MidiNotes.Length;
-        fingerScore = new int[l];
-        Debug.LogError(l);
-        try
-        {
-            for (int i = 0; i < l; i++)
-            {
-                fingerScore[i] = int.Parse(fingers[i]);
-            }
-        }
-        catch(Exception ex)
-        {
-            Debug.LogError(ex.Message);
-        }
-
         OnPlayTrack.Invoke();
-	}
+    }
 
 	[ContextMenu("Preset MIDI")]
 	void PresetFirstMIDI()
