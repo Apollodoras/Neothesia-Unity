@@ -100,24 +100,34 @@ public class DrumMidiPlayer : MonoBehaviour
 		else
 		{
 #if UNITY_EDITOR
-			_path = string.Format("{0}/MIDI/Drum/{1}.mid", Application.streamingAssetsPath, MIDISongs[0].MIDIFile.name);
             txt_path = string.Format("{0}/MIDI/Drum/SongNames.txt", Application.streamingAssetsPath);
 #else
-			_path = string.Format("{0}/MIDI/Drum/{1}.mid", Application.streamingAssetsPath, MIDISongs[0].SongFileName);
             txt_path = string.Format("{0}/MIDI/Drum/SongNames.txt", Application.streamingAssetsPath);
 #endif
-            _midi = new MidiFileInspector(_path);
-            MidiNotes = _midi.GetNotes();
-            _noteIndex = 0;
-
             _scoretxt = new TextAsset(txt_path);
 
             string[] AllWords = File.ReadAllLines(txt_path);
-            
-            Debug.LogError(AllWords);
 
+            for (int i = 0; i < AllWords.Length; i++)
+            {
+                GameObject songbutton = Instantiate(drumsongbuttonprefab, drumsonglist.transform) as GameObject;
+                songbutton.name = (i + 1).ToString();
+                songbutton.transform.GetChild(2).GetChild(2).GetChild(0).GetComponent<TMP_Text>().text = AllWords[i];
+                songbutton.transform.GetChild(2).GetChild(2).GetChild(1).GetComponent<TMP_Text>().text = "DRUM SONG";
+                songbutton.transform.GetChild(2).GetChild(5).gameObject.SetActive(false);
+            }
+
+#if UNITY_EDITOR
+            _path = string.Format("{0}/MIDI/Drum/{1}.mid", Application.streamingAssetsPath, AllWords[_midiIndex]);
+#else
+		_path = string.Format("{0}/MIDI/Drum/{1}.mid", Application.streamingAssetsPath, AllWords[_midiIndex]);
+#endif
+            _midi = new MidiFileInspector(_path);
+            playmp3clip = Resources.Load(AllWords[_midiIndex]) as AudioClip;
+            MidiNotes = _midi.GetNotes();
+            _noteIndex = 0;
             OnPlayTrack.Invoke();
-		}
+        }
         if(playmp3clip != null)
             GetComponent<AudioSource>().clip = playmp3clip;
         GetComponent<AudioSource>().Play();
@@ -239,7 +249,6 @@ public class DrumMidiPlayer : MonoBehaviour
         playended = false;
         //Debug.LogError(drumsonglist.GetComponent<RectTransform>().localPosition.y);
         _midiIndex = (int)(drumsonglist.GetComponent<RectTransform>().localPosition.y / 135f);
-        SceneManager.LoadScene("Drum");
         SceneManager.LoadScene("Drum");
     }
 
@@ -937,11 +946,11 @@ public class DrumMidiPlayer : MonoBehaviour
 
 #if UNITY_EDITOR
         _path = string.Format("{0}/MIDI/Drum/{1}.mid", Application.streamingAssetsPath, AllWords[_midiIndex]);
-        playmp3clip = Resources.Load(AllWords[_midiIndex]) as AudioClip;
 #else
 		_path = string.Format("{0}/MIDI/Drum/{1}.mid", Application.streamingAssetsPath, AllWords[_midiIndex]);
 #endif
         _midi = new MidiFileInspector(_path);
+        playmp3clip = Resources.Load(AllWords[_midiIndex]) as AudioClip;
         MidiNotes = _midi.GetNotes();
         _noteIndex = 0;
         OnPlayTrack.Invoke();
@@ -951,35 +960,33 @@ public class DrumMidiPlayer : MonoBehaviour
 	void PresetFirstMIDI()
 	{
 #if UNITY_EDITOR
-		_path = string.Format("{0}/MIDI/Drum/{1}.mid", Application.streamingAssetsPath, MIDISongs[0].MIDIFile.name);
-        txt_path = string.Format("{0}/Score/{1}.txt", Application.streamingAssetsPath, MIDISongs[0].MIDIFile.name);
+        txt_path = string.Format("{0}/MIDI/Drum/SongNames.txt", Application.streamingAssetsPath);
 #else
-		_path = string.Format("{0}/MIDI/Drum/{1}.mid", Application.streamingAssetsPath, MIDISongs[0].SongFileName);
-        txt_path = string.Format("{0}/Score/{1}.txt", Application.streamingAssetsPath, MIDISongs[0].SongFileName);
+            txt_path = string.Format("{0}/MIDI/Drum/SongNames.txt", Application.streamingAssetsPath);
 #endif
-        _midi = new MidiFileInspector(_path);
-		MidiNotes = _midi.GetNotes();
+        _scoretxt = new TextAsset(txt_path);
 
         string[] AllWords = File.ReadAllLines(txt_path);
-        string[] fingers = AllWords[2].Split(" ");
-        int l;
-        if (MidiNotes.Length > fingers.Length)
-            l = fingers.Length;
-        else
-            l = MidiNotes.Length;
-        fingerScore = new int[l];
-        Debug.LogError(l);
-        try
+
+        for (int i = 0; i < AllWords.Length; i++)
         {
-            for (int i = 0; i < l; i++)
-            {
-                fingerScore[i] = int.Parse(fingers[i]);
-            }
+            GameObject songbutton = Instantiate(drumsongbuttonprefab, drumsonglist.transform) as GameObject;
+            songbutton.name = (i + 1).ToString();
+            songbutton.transform.GetChild(2).GetChild(2).GetChild(0).GetComponent<TMP_Text>().text = AllWords[i];
+            songbutton.transform.GetChild(2).GetChild(2).GetChild(1).GetComponent<TMP_Text>().text = "DRUM SONG";
+            songbutton.transform.GetChild(2).GetChild(5).gameObject.SetActive(false);
         }
-        catch (Exception ex)
-        {
-            Debug.LogError(ex.Message);
-        }
+
+#if UNITY_EDITOR
+        _path = string.Format("{0}/MIDI/Drum/{1}.mid", Application.streamingAssetsPath, AllWords[_midiIndex]);
+#else
+		_path = string.Format("{0}/MIDI/Drum/{1}.mid", Application.streamingAssetsPath, AllWords[_midiIndex]);
+#endif
+        _midi = new MidiFileInspector(_path);
+        playmp3clip = Resources.Load(AllWords[_midiIndex]) as AudioClip;
+        MidiNotes = _midi.GetNotes();
+        _noteIndex = 0;
+        OnPlayTrack.Invoke();
 
         _preset = true;
 	}
