@@ -832,6 +832,7 @@ public class MidiPlayer : MonoBehaviour
 
                 if (ShowMIDIChannelColours)
                 {
+                    if (PianoKeyDetector.PianoNotes.ContainsKey(MidiNotes[_noteIndex].Note))
                     PianoKeyDetector.PianoNotes[MidiNotes[_index].Note].Play(MIDIChannelColours[MidiNotes[_index].Channel],
                                                                             MidiNotes[_index].Velocity,
                                                                             MidiNotes[_index].Length,
